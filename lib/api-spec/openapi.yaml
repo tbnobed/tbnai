@@ -3,13 +3,20 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RAG search API for book publishing archive
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: search
+    description: RAG query and search history
+  - name: books
+    description: Book catalog management
+  - name: catalog
+    description: Catalog-wide stats and aggregates
+
 paths:
   /healthz:
     get:
@@ -24,6 +31,297 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /search:
+    post:
+      operationId: submitSearch
+      tags: [search]
+      summary: Submit a RAG search query
+      description: Ask a question in plain English; returns a synthesized answer with citations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchInput"
+      responses:
+        "200":
+          description: Search result with answer and citations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: LLM or vector service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /search/history:
+    get:
+      operationId: listSearchHistory
+      tags: [search]
+      summary: List search history for the current user
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: number
+            default: 0
+      responses:
+        "200":
+          description: Paginated search history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchHistoryPage"
+
+  /search/recent:
+    get:
+      operationId: listRecentSearches
+      tags: [search]
+      summary: List recent searches across all users (admin wow endpoint)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 10
+      responses:
+        "200":
+          description: Recent searches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
+
+  /search/{id}:
+    get:
+      operationId: getSearchResult
+      tags: [search]
+      summary: Get a single search result by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /books:
+    get:
+      operationId: listBooks
+      tags: [books]
+      summary: List all books in the catalog
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, ready, error]
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: number
+            default: 0
+      responses:
+        "200":
+          description: List of books
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookListPage"
+    post:
+      operationId: createBook
+      tags: [books]
+      summary: Register a new book for ingestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        "201":
+          description: Book created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /books/{id}:
+    get:
+      operationId: getBook
+      tags: [books]
+      summary: Get a book by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Book details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      operationId: updateBook
+      tags: [books]
+      summary: Update book metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookUpdate"
+      responses:
+        "200":
+          description: Updated book
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteBook
+      tags: [books]
+      summary: Delete a book and all its chunks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /books/{id}/reindex:
+    post:
+      operationId: reindexBook
+      tags: [books]
+      summary: Trigger re-ingestion and reindexing of a book
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "202":
+          description: Reindex job queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /books/{id}/chunks:
+    get:
+      operationId: listBookChunks
+      tags: [books]
+      summary: List text chunks for a book (up to 100, for inspection)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of chunks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChunkListPage"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /catalog/stats:
+    get:
+      operationId: getCatalogStats
+      tags: [catalog]
+      summary: Get catalog-wide statistics
+      responses:
+        "200":
+          description: Catalog statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +332,206 @@ components:
       required:
         - status
 
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    # ── Book ──────────────────────────────────────────────────────────────────
+
+    Book:
+      type: object
+      required: [id, title, author, publishedYear, description, filePath, status, totalChunks, createdAt, updatedAt]
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        author:
+          type: string
+        publishedYear:
+          type: ["number", "null"]
+        description:
+          type: ["string", "null"]
+        filePath:
+          type: string
+          description: Server-side path to the source file (PDF or plain text)
+        status:
+          type: string
+          enum: [pending, processing, ready, error]
+        errorMessage:
+          type: ["string", "null"]
+        totalChunks:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookInput:
+      type: object
+      required: [title, author, filePath]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+        publishedYear:
+          type: ["number", "null"]
+        description:
+          type: ["string", "null"]
+        filePath:
+          type: string
+          minLength: 1
+          description: Server-side absolute path to the PDF or text file
+
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+        publishedYear:
+          type: ["number", "null"]
+        description:
+          type: ["string", "null"]
+
+    BookListPage:
+      type: object
+      required: [books, total]
+      properties:
+        books:
+          type: array
+          items:
+            $ref: "#/components/schemas/Book"
+        total:
+          type: number
+
+    # ── Chunk ─────────────────────────────────────────────────────────────────
+
+    Chunk:
+      type: object
+      required: [id, bookId, chunkIndex, content, chapterTitle, pageStart, pageEnd, createdAt]
+      properties:
+        id:
+          type: number
+        bookId:
+          type: number
+        chunkIndex:
+          type: number
+        content:
+          type: string
+        chapterTitle:
+          type: ["string", "null"]
+        pageStart:
+          type: ["number", "null"]
+        pageEnd:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ChunkListPage:
+      type: object
+      required: [chunks, total]
+      properties:
+        chunks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chunk"
+        total:
+          type: number
+
+    # ── Search ────────────────────────────────────────────────────────────────
+
+    SearchInput:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Plain-English question to ask against the book archive
+
+    Citation:
+      type: object
+      required: [bookId, bookTitle, author, excerpt, relevanceScore]
+      properties:
+        bookId:
+          type: number
+        bookTitle:
+          type: string
+        author:
+          type: string
+        chapterTitle:
+          type: ["string", "null"]
+        pageStart:
+          type: ["number", "null"]
+        pageEnd:
+          type: ["number", "null"]
+        excerpt:
+          type: string
+        relevanceScore:
+          type: number
+          format: float
+
+    SearchResult:
+      type: object
+      required: [id, queryText, answer, citations, userId, createdAt]
+      properties:
+        id:
+          type: number
+        queryText:
+          type: string
+        answer:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        userId:
+          type: string
+          description: Clerk user ID
+        createdAt:
+          type: string
+          format: date-time
+
+    SearchHistoryPage:
+      type: object
+      required: [results, total]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        total:
+          type: number
+
+    # ── Catalog Stats ─────────────────────────────────────────────────────────
+
+    CatalogStats:
+      type: object
+      required: [totalBooks, booksReady, booksProcessing, booksError, totalChunks, totalSearches]
+      properties:
+        totalBooks:
+          type: number
+        booksReady:
+          type: number
+        booksProcessing:
+          type: number
+        booksError:
+          type: number
+        totalChunks:
+          type: number
+        totalSearches:
+          type: number
