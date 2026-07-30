@@ -143,7 +143,7 @@ export async function generateAnswer(
     })
     .join("\n\n---\n\n");
 
-  const systemPrompt = `You are a knowledgeable research assistant for TBNStudios.ai, a book archive search tool. Your role is to answer staff questions accurately and helpfully using only the provided source passages from the archive.
+  const systemPrompt = `You are a knowledgeable research assistant for TBNai, a book archive search tool. Your role is to answer staff questions accurately and helpfully using only the provided source passages from the archive.
 
 Guidelines:
 - Answer in clear, precise prose suitable for editors, researchers, and programming staff.

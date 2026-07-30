@@ -78,7 +78,7 @@ export default function SearchPage() {
         {submitSearch.isPending && (
           <div className="bg-card border border-card-border rounded-lg p-12 text-center">
             <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Searching TBNStudios.ai...</p>
+            <p className="text-muted-foreground">Searching TBNai...</p>
           </div>
         )}
 

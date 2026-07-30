@@ -41,7 +41,7 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
   },
   variables: {
     colorPrimary: "hsl(28, 68%, 48%)",
@@ -170,8 +170,8 @@ function ClerkProviderWithRoutes() {
       localization={{
         signIn: {
           start: {
-            title: "Welcome to TBNStudios.ai",
-            titleCombined: "Welcome to TBNStudios.ai",
+            title: "Welcome to TBNai",
+            titleCombined: "Welcome to TBNai",
             subtitle: "Sign in to search the archive",
             subtitleCombined: "Sign in to search the archive",
           },

@@ -76,7 +76,7 @@ export async function sendInviteEmail(params: {
                 Archive Search
               </p>
               <p style="margin:4px 0 0;font-size:13px;color:rgba(255,255,255,0.75);">
-                TBNStudios.ai
+                TBNai
               </p>
             </td>
           </tr>
@@ -88,7 +88,7 @@ export async function sendInviteEmail(params: {
                 You've been invited
               </h1>
               <p style="margin:0 0 12px;font-size:16px;color:#6b5744;line-height:1.6;">
-                ${invitedBy} has invited you to access the TBNStudios.ai book archive search tool.
+                ${invitedBy} has invited you to access the TBNai book archive search tool.
               </p>
               <p style="margin:0 0 32px;font-size:16px;color:#6b5744;line-height:1.6;">
                 Ask plain-English questions and get synthesized answers drawn from the full text of
@@ -135,7 +135,7 @@ export async function sendInviteEmail(params: {
   const text = `
 You've been invited to Archive Search
 
-${invitedBy} has invited you to access the TBNStudios.ai book archive search tool.
+${invitedBy} has invited you to access the TBNai book archive search tool.
 
 Ask plain-English questions and get synthesized answers drawn from the full text of the published book catalog — with citations back to book, chapter, and page.
 

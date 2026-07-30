@@ -36,12 +36,12 @@ export function AppShell({ children }: AppShellProps) {
         <div className="p-6 border-b border-sidebar-border">
           <Link href="/search" className="flex items-center gap-3 group">
             <img
-              src={`${basePath}/logo.svg`}
-              alt="TBNStudios.ai logo"
+              src={`${basePath}/logo.png`}
+              alt="TBNai logo"
               className="w-10 h-10 object-contain"
             />
             <div className="flex-1 min-w-0">
-              <h1 className="font-serif font-semibold text-lg text-sidebar-foreground leading-tight">TBNStudios.ai</h1>
+              <h1 className="font-serif font-semibold text-lg text-sidebar-foreground leading-tight">TBNai</h1>
             </div>
           </Link>
         </div>
