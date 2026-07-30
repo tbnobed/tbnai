@@ -8,7 +8,7 @@ export default function SignInPage() {
       <img
         src={`${basePath}/logo.png`}
         alt="TBNai"
-        className="w-80 h-auto"
+        className="w-full max-w-2xl h-auto"
       />
       <SignIn routing="path" path={`${basePath}/sign-in`} />
     </div>

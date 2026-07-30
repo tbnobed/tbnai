@@ -1,0 +1,227 @@
+/* ==========================================================================
+   TBN AI design tokens
+   Every brand value below was sampled out of the supplied logo artwork.
+   The utility colours at the bottom are additions: the mark has no red or
+   green in it, and an interface needs them.
+   ========================================================================== */
+
+:root {
+
+  /* --- Sampled from the mark ---------------------------------------------
+     A single ramp from the navy of the blocks to the pale glow behind the
+     fanned pages. The whole identity lives on this one ramp.              */
+  --navy-deep: #0A2243;   /* deepest value in the artwork                  */
+  --navy:      #0C2A4E;   /* the TBN blocks. Primary brand colour.         */
+  --signal:    #2B71A5;   /* mid blue, the book's body                     */
+  --sky:       #80B5D6;   /* the fan traces. The connection colour.        */
+  --mist:      #BBD9EB;   /* pale page                                     */
+  --haze:      #E6F0F6;   /* the glow                                      */
+  --paper:     #FFFFFF;
+
+  --sky-wash:    rgba(128, 181, 214, 0.16);
+  --signal-wash: rgba(43, 113, 165, 0.10);
+
+  /* --- Light ground -------------------------------------------------------
+     Text is navy, not black. Pure black against this palette reads as a
+     different brand; the navy keeps everything on one ramp.               */
+  --lt-bg:     #FFFFFF;
+  --lt-panel:  #F5F8FA;
+  --lt-raised: #FFFFFF;
+  --lt-border: #DCE5EC;
+  --lt-firm:   #BECEDB;
+  --lt-fg:     var(--navy);
+  --lt-muted:  #5A6E80;
+  --lt-faint:  #8FA0AE;
+
+  /* --- Dark ground --------------------------------------------------------
+     Blue-blacks, not neutral greys, so the dark interface reads as the same
+     object as the light one rather than a theme bolted on afterwards.     */
+  --dk-bg:     #081A30;
+  --dk-panel:  #0F2742;
+  --dk-raised: #163353;
+  --dk-border: #1E3F63;
+  --dk-firm:   #2C557E;
+  --dk-fg:     #E8F0F6;
+  --dk-muted:  #93A9BC;
+  --dk-faint:  #64798C;
+
+  /* --- Utility ------------------------------------------------------------
+     Not in the mark. Kept desaturated so they sit beside the blue ramp
+     instead of fighting it.                                               */
+  --verdigris: #2E8F72;   /* indexed, success        */
+  --amber:     #C08A1E;   /* rights held, warning    */
+  --coral:     #C2452F;   /* failed, destructive     */
+
+  /* --- Type ---------------------------------------------------------------
+       Archivo       display and interface. A grotesque with a width axis,
+                     which echoes the heavy square letterforms in the blocks.
+       Source Serif  reading. Answer prose only.
+       JetBrains     folios, ISBNs, IDs, log lines, citation numerals.     */
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-ui:      "Archivo", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-read:    "Source Serif 4", Georgia, serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --display-width: 108;   /* font-stretch % for headings */
+
+  --size-3xs: 10px; --size-2xs: 11px; --size-xs: 12px; --size-sm: 13px;
+  --size-base: 14px; --size-md: 16px; --size-lg: 20px; --size-xl: 26px;
+  --size-2xl: 33px; --size-3xl: 42px; --size-4xl: 54px;
+
+  /* Answer prose. The only serif setting, and the only place in the product
+     where someone reads a paragraph rather than scanning a field. */
+  --read-size:    18px;
+  --read-leading: 1.68;
+  --read-measure: 66ch;
+
+  --leading-tight:  1.1;
+  --leading-ui:     1.45;
+  --tracking-tight: -0.02em;
+  --tracking-head:   0.12em;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+  /* The blocks in the mark are hard squares; the traces are round-capped.
+     Surfaces stay square, and only the node borrows the curve. */
+  --radius:      0;
+  --radius-node: 50%;
+
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+  --dur-instant: 90ms; --dur-quick: 160ms; --dur-panel: 220ms;
+}
+
+/* --- Semantic layer ------------------------------------------------------- */
+:root, [data-ground="light"] {
+  --bg: var(--lt-bg); --bg-panel: var(--lt-panel); --bg-raised: var(--lt-raised);
+  --border: var(--lt-border); --border-firm: var(--lt-firm);
+  --fg: var(--lt-fg); --fg-muted: var(--lt-muted); --fg-faint: var(--lt-faint);
+  --accent: var(--signal); --accent-hover: var(--navy);
+  --link: var(--signal); --node: var(--signal);
+}
+[data-ground="dark"] {
+  --bg: var(--dk-bg); --bg-panel: var(--dk-panel); --bg-raised: var(--dk-raised);
+  --border: var(--dk-border); --border-firm: var(--dk-firm);
+  --fg: var(--dk-fg); --fg-muted: var(--dk-muted); --fg-faint: var(--dk-faint);
+  --accent: var(--sky); --accent-hover: var(--mist);
+  --link: var(--sky); --node: var(--sky);
+}
+
+:root {
+  --status-indexed:    var(--verdigris);
+  --status-processing: var(--sky);
+  --status-queued:     var(--fg-faint);
+  --status-held:       var(--amber);
+  --status-failed:     var(--coral);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-instant: 0ms; --dur-quick: 0ms; --dur-panel: 0ms; }
+}
+
+/* ==========================================================================
+   SIGNATURE DEVICE: the node
+   In the mark, each fanned page ends in a node. In the product, a node is a
+   retrieved source. Citations are nodes. Source cards carry a node. It marks
+   a connection between the archive and an answer, and nothing else.
+   ========================================================================== */
+
+.node {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: var(--radius-node);
+  background: var(--node);
+  flex: none;
+}
+
+/* Citation marker: a node with its number. The most-used element by far. */
+.cite {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 17px; height: 17px; padding: 0 4px; margin: 0 1px;
+  vertical-align: 3px;
+  background: transparent; color: var(--accent);
+  border: 1px solid var(--accent);
+  font-family: var(--font-mono); font-size: var(--size-3xs); font-weight: 600;
+  line-height: 1; font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: background var(--dur-instant) var(--ease),
+              color      var(--dur-instant) var(--ease);
+}
+.cite:hover, .cite[data-active="true"] { background: var(--accent); color: var(--bg); }
+.cite:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ==========================================================================
+   THE FAN: retrieval progress
+   The mark drawing itself. One trace and one node per source as it comes
+   back, so the several seconds before the first token are spent watching
+   the logo assemble rather than watching a spinner.
+   ========================================================================== */
+
+.fan { display: flex; align-items: flex-end; gap: 10px; height: 34px; }
+.fan .trace {
+  width: 2px; background: var(--border-firm); border-radius: 1px;
+  height: 8px; position: relative;
+  transition: height var(--dur-panel) var(--ease),
+              background var(--dur-panel) var(--ease);
+}
+.fan .trace::after {
+  content: ""; position: absolute; top: -4px; left: -2px;
+  width: 6px; height: 6px; border-radius: var(--radius-node);
+  background: var(--border-firm);
+  transition: background var(--dur-panel) var(--ease);
+}
+.fan .trace[data-found="true"]             { background: var(--accent); }
+.fan .trace[data-found="true"]::after      { background: var(--accent); }
+.fan .trace:nth-child(1),
+.fan .trace:nth-child(5) { --h: 18px; }
+.fan .trace:nth-child(2),
+.fan .trace:nth-child(4) { --h: 26px; }
+.fan .trace:nth-child(3) { --h: 32px; }
+.fan .trace[data-found="true"] { height: var(--h); }
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+.answer {
+  font-family: var(--font-read); font-size: var(--read-size);
+  line-height: var(--read-leading); max-width: var(--read-measure);
+  color: var(--fg);
+}
+
+.source-card {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  padding: var(--space-3);
+  display: grid; grid-template-columns: auto 1fr; gap: var(--space-3);
+  align-items: start;
+}
+.source-card > .node { margin-top: 6px; }
+.source-card .body {
+  font-family: var(--font-read); font-size: var(--size-sm);
+  line-height: 1.58; color: var(--fg);
+}
+
+.folio {
+  font-family: var(--font-mono); font-size: var(--size-2xs);
+  font-variant-numeric: tabular-nums; color: var(--fg-muted);
+}
+
+.running-head {
+  font-family: var(--font-ui); font-size: var(--size-2xs); font-weight: 600;
+  letter-spacing: var(--tracking-head); text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.status-dot {
+  display: inline-block; width: 6px; height: 6px;
+  margin-right: var(--space-2); background: currentColor;
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display); font-stretch: 108%; font-weight: 700;
+  letter-spacing: var(--tracking-tight); line-height: var(--leading-tight);
+  color: var(--fg);
+}
+
+/* The glow in the mark is artwork, not a UI effect. Nothing in the interface
+   gets a shadow, a glow or a gradient. Depth comes from surface value. */
