@@ -170,8 +170,10 @@ function ClerkProviderWithRoutes() {
       localization={{
         signIn: {
           start: {
-            title: "Welcome back",
-            subtitle: "Sign in to access the archive",
+            title: "Welcome to TBNStudios.ai",
+            titleCombined: "Welcome to TBNStudios.ai",
+            subtitle: "Sign in to search the ministry archive",
+            subtitleCombined: "Sign in to search the ministry archive",
           },
         },
       }}

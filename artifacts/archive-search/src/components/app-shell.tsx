@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Search, History, Library, Settings, LogOut, UploadCloud } from "lucide-react";
+import { Search, History, Library, Settings, LogOut, UploadCloud } from "lucide-react";
 import { useClerk, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,12 +35,13 @@ export function AppShell({ children }: AppShellProps) {
       <aside className="w-64 border-r border-sidebar-border bg-sidebar flex flex-col">
         <div className="p-6 border-b border-sidebar-border">
           <Link href="/search" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img
+              src={`${basePath}/logo.svg`}
+              alt="TBNStudios.ai logo"
+              className="w-10 h-10 object-contain"
+            />
             <div className="flex-1 min-w-0">
-              <h1 className="font-serif font-semibold text-lg text-sidebar-foreground leading-tight">Archive Search</h1>
-              <p className="text-xs text-muted-foreground">Ministry Library</p>
+              <h1 className="font-serif font-semibold text-lg text-sidebar-foreground leading-tight">TBNStudios.ai</h1>
             </div>
           </Link>
         </div>

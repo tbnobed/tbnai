@@ -208,7 +208,7 @@ export default function AdminPage() {
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
                   Enter their email address. They'll receive an email with a one-time sign-in link (valid for 24 hours).
-                  The link takes them directly into the archive — no password setup required.
+                  The link takes them directly into TBNStudios.ai — no password setup required.
                 </p>
                 <form onSubmit={handleInvite} className="space-y-4 mt-2">
                   <div>

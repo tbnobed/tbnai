@@ -29,7 +29,7 @@ export default function LibraryPage() {
         <div className="mb-8">
           <h1 className="font-serif text-4xl font-bold text-foreground mb-3">Book Catalog</h1>
           <p className="text-muted-foreground mb-6">
-            Browse all books in the archive. Click any book to view its ingestion details and text chunks.
+            Browse all books in the TBNStudios.ai library. Click any book to view its ingestion details and text chunks.
           </p>
 
           <div className="relative">
