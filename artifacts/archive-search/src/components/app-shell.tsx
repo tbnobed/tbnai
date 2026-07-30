@@ -1,10 +1,30 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, History, Library, Settings, LogOut, UploadCloud } from "lucide-react";
-import { useClerk, useUser } from "@clerk/react";
+import { Search, History, Library, Settings, LogOut, UploadCloud, ScrollText } from "lucide-react";
+import { useClerk, useUser, useAuth } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+
+function useIsAdmin(): boolean {
+  const { getToken, isSignedIn } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["admin-me"],
+    enabled: !!isSignedIn,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch(`${basePath}/api/admin/me`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+      });
+      if (!res.ok) return { isAdmin: false };
+      return (await res.json()) as { isAdmin: boolean };
+    },
+  });
+  return data?.isAdmin ?? false;
+}
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -17,12 +37,19 @@ export function AppShell({ children }: AppShellProps) {
   const { signOut } = useClerk();
   const { user } = useUser();
 
+  const isAdmin = useIsAdmin();
+
   const navigation = [
     { name: "Search", href: "/search", icon: Search },
     { name: "Library", href: "/library", icon: Library },
     { name: "Upload", href: "/upload", icon: UploadCloud },
     { name: "History", href: "/history", icon: History },
-    { name: "Admin", href: "/admin", icon: Settings },
+    ...(isAdmin
+      ? [
+          { name: "Logs", href: "/logs", icon: ScrollText },
+          { name: "Admin", href: "/admin", icon: Settings },
+        ]
+      : []),
   ];
 
   const initials = user?.firstName && user?.lastName

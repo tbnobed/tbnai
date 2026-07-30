@@ -13,6 +13,7 @@ import { Router, type IRouter } from "express";
 import { getAuth, createClerkClient } from "@clerk/express";
 import { sendInviteEmail } from "../lib/email";
 import { logger } from "../lib/logger";
+import { isAdminUser } from "../lib/admin";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,10 @@ router.post("/admin/invite", async (req, res): Promise<void> => {
   const auth = getAuth(req);
   if (!auth?.userId) {
     res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!(await isAdminUser(auth.userId))) {
+    res.status(403).json({ error: "Admin access required" });
     return;
   }
 

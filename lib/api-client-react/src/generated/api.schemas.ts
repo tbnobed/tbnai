@@ -129,6 +129,80 @@ export interface SearchHistoryPage {
   total: number;
 }
 
+export interface ChatInput {
+  /**
+     * Existing conversation to continue; omit or null to start a new one
+     * @nullable
+     */
+  conversationId?: number | null;
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  message: string;
+}
+
+export type ChatMessageRole = typeof ChatMessageRole[keyof typeof ChatMessageRole];
+
+
+export const ChatMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface ChatMessage {
+  id: number;
+  conversationId: number;
+  role: ChatMessageRole;
+  content: string;
+  /** @nullable */
+  citations: Citation[] | null;
+  createdAt: string;
+}
+
+export interface ChatResponse {
+  conversationId: number;
+  userMessage: ChatMessage;
+  assistantMessage: ChatMessage;
+}
+
+export interface Conversation {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationDetail {
+  conversation: Conversation;
+  messages: ChatMessage[];
+}
+
+export type AdminLogEntryRole = typeof AdminLogEntryRole[keyof typeof AdminLogEntryRole];
+
+
+export const AdminLogEntryRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface AdminLogEntry {
+  id: number;
+  conversationId: number;
+  conversationTitle: string;
+  /** Clerk user ID of the conversation owner */
+  userId: string;
+  role: AdminLogEntryRole;
+  content: string;
+  citationCount: number;
+  createdAt: string;
+}
+
+export interface AdminLogsPage {
+  entries: AdminLogEntry[];
+  total: number;
+}
+
 export interface CatalogStats {
   totalBooks: number;
   booksReady: number;
@@ -161,5 +235,42 @@ export const ListBooksStatus = {
   processing: 'processing',
   ready: 'ready',
   error: 'error',
+} as const;
+
+export type ListAdminLogsParams = {
+/**
+ * Free-text search over message content and conversation title
+ */
+q?: string;
+/**
+ * Filter by Clerk user ID
+ */
+userId?: string;
+role?: ListAdminLogsRole;
+/**
+ * ISO date-time lower bound (inclusive)
+ */
+from?: string;
+/**
+ * ISO date-time upper bound (inclusive)
+ */
+to?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type ListAdminLogsRole = typeof ListAdminLogsRole[keyof typeof ListAdminLogsRole];
+
+
+export const ListAdminLogsRole = {
+  user: 'user',
+  assistant: 'assistant',
 } as const;
 

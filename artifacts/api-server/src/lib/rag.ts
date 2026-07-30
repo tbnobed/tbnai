@@ -112,6 +112,126 @@ export interface RagAnswer {
   }>;
 }
 
+const MAX_HISTORY_MESSAGES = parseInt(
+  process.env.CHAT_MAX_HISTORY_MESSAGES ?? "20",
+  10,
+);
+const MAX_HISTORY_MESSAGE_CHARS = 8000;
+
+export interface ChatHistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/**
+ * Conversational RAG — answers the latest message using retrieved passages
+ * plus the full prior conversation, so follow-up questions keep context.
+ */
+export async function generateChatAnswer(
+  history: ChatHistoryMessage[],
+  message: string,
+  chunks: RetrievedChunk[],
+): Promise<RagAnswer> {
+  const client = getOpenAIClient();
+
+  // Bound the prompt: keep only the most recent turns, and truncate any
+  // pathologically long message so context growth stays predictable.
+  const boundedHistory = history
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((m) => ({
+      role: m.role,
+      content:
+        m.content.length > MAX_HISTORY_MESSAGE_CHARS
+          ? m.content.slice(0, MAX_HISTORY_MESSAGE_CHARS) + "…"
+          : m.content,
+    }));
+
+  const contextText =
+    chunks.length === 0
+      ? "(No relevant passages were found in the archive for this message.)"
+      : chunks
+          .map((c, i) => {
+            const location = [
+              c.chapterTitle ? `Chapter: ${c.chapterTitle}` : null,
+              c.pageStart != null
+                ? c.pageEnd != null && c.pageEnd !== c.pageStart
+                  ? `Pages ${c.pageStart}–${c.pageEnd}`
+                  : `Page ${c.pageStart}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(", ");
+            return `[${i + 1}] "${c.bookTitle}" by ${c.bookAuthor}${location ? ` (${location})` : ""}:\n${c.content}`;
+          })
+          .join("\n\n---\n\n");
+
+  const systemPrompt = `You are a knowledgeable research assistant for TBNai, a book archive search tool. You are having an ongoing conversation with a staff member. Answer their latest message accurately and helpfully, grounded in the provided source passages from the archive and consistent with the conversation so far.
+
+Guidelines:
+- Use the full conversation history to resolve pronouns, follow-ups, and references to earlier answers.
+- Answer in clear, precise prose suitable for editors, researchers, and programming staff.
+- Synthesize across multiple sources when relevant — do not merely quote.
+- If the passages don't fully address the question, say so honestly while sharing what is available.
+- Do not invent information not present in the passages or earlier in the conversation.
+- Do not cite passage numbers in your answer text; the citations will be shown separately.`;
+
+  const finalUserPrompt = `${message}
+
+---
+Source passages retrieved from the archive for this message:
+
+${contextText}
+
+Answer my message above, grounded in these passages and our conversation so far.`;
+
+  const completion = await client.chat.completions.create({
+    model: CHAT_MODEL,
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...boundedHistory.map(
+        (m) => ({ role: m.role, content: m.content }) as const,
+      ),
+      { role: "user", content: finalUserPrompt },
+    ],
+    temperature: 0.2,
+    max_tokens: 1024,
+  });
+
+  const answer =
+    completion.choices[0]?.message?.content?.trim() ??
+    "Unable to generate an answer. Please try again.";
+
+  logger.info(
+    { historyLength: history.length, chunkCount: chunks.length },
+    "Conversational RAG answer generated",
+  );
+
+  return { answer, citations: dedupeCitations(chunks) };
+}
+
+function dedupeCitations(chunks: RetrievedChunk[]): RagAnswer["citations"] {
+  const citationMap = new Map<number, RagAnswer["citations"][number]>();
+  for (const chunk of chunks) {
+    const existing = citationMap.get(chunk.bookId);
+    if (!existing || chunk.similarity > existing.relevanceScore) {
+      citationMap.set(chunk.bookId, {
+        bookId: chunk.bookId,
+        bookTitle: chunk.bookTitle,
+        author: chunk.bookAuthor,
+        chapterTitle: chunk.chapterTitle,
+        pageStart: chunk.pageStart,
+        pageEnd: chunk.pageEnd,
+        excerpt:
+          chunk.content.slice(0, 300) + (chunk.content.length > 300 ? "…" : ""),
+        relevanceScore: parseFloat(chunk.similarity.toFixed(4)),
+      });
+    }
+  }
+  return Array.from(citationMap.values()).sort(
+    (a, b) => b.relevanceScore - a.relevanceScore,
+  );
+}
+
 export async function generateAnswer(
   query: string,
   chunks: RetrievedChunk[],

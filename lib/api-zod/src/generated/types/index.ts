@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminLogEntry';
+export * from './adminLogEntryRole';
+export * from './adminLogsPage';
 export * from './apiError';
 export * from './book';
 export * from './bookInput';
@@ -13,10 +16,18 @@ export * from './bookListPage';
 export * from './bookStatus';
 export * from './bookUpdate';
 export * from './catalogStats';
+export * from './chatInput';
+export * from './chatMessage';
+export * from './chatMessageRole';
+export * from './chatResponse';
 export * from './chunk';
 export * from './chunkListPage';
 export * from './citation';
+export * from './conversation';
+export * from './conversationDetail';
 export * from './healthStatus';
+export * from './listAdminLogsParams';
+export * from './listAdminLogsRole';
 export * from './listBooksParams';
 export * from './listBooksStatus';
 export * from './listRecentSearchesParams';

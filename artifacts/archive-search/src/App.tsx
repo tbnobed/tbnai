@@ -10,6 +10,7 @@ import SearchPage from '@/pages/search';
 import LibraryPage from '@/pages/library';
 import HistoryPage from '@/pages/history';
 import AdminPage from '@/pages/admin';
+import LogsPage from '@/pages/logs';
 import SignInPage from '@/pages/sign-in';
 import UploadPage from '@/pages/upload';
 import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
@@ -148,6 +149,9 @@ function Router() {
       </Route>
       <Route path="/admin">
         <ProtectedRoute component={AdminPage} />
+      </Route>
+      <Route path="/logs">
+        <ProtectedRoute component={LogsPage} />
       </Route>
       <Route component={NotFound} />
     </Switch>

@@ -306,6 +306,151 @@ export const ListBookChunksResponse = zod.object({
 
 
 /**
+ * Sends a message in a conversation; the answer uses retrieved passages plus the full conversation history. Omit conversationId to start a new conversation.
+ * @summary Send a chat message (conversational RAG)
+ */
+export const submitChatMessageBodyMessageMax = 4000;
+
+
+
+export const SubmitChatMessageBody = zod.object({
+  "conversationId": zod.number().nullish().describe('Existing conversation to continue; omit or null to start a new one'),
+  "message": zod.string().min(1).max(submitChatMessageBodyMessageMax)
+})
+
+export const SubmitChatMessageResponse = zod.object({
+  "conversationId": zod.number(),
+  "userMessage": zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "citations": zod.array(zod.object({
+  "bookId": zod.number(),
+  "bookTitle": zod.string(),
+  "author": zod.string(),
+  "chapterTitle": zod.string().nullish(),
+  "pageStart": zod.number().nullish(),
+  "pageEnd": zod.number().nullish(),
+  "excerpt": zod.string(),
+  "relevanceScore": zod.number()
+})).nullable(),
+  "createdAt": zod.coerce.date()
+}),
+  "assistantMessage": zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "citations": zod.array(zod.object({
+  "bookId": zod.number(),
+  "bookTitle": zod.string(),
+  "author": zod.string(),
+  "chapterTitle": zod.string().nullish(),
+  "pageStart": zod.number().nullish(),
+  "pageEnd": zod.number().nullish(),
+  "excerpt": zod.string(),
+  "relevanceScore": zod.number()
+})).nullable(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary List the current user's conversations
+ */
+export const ListConversationsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListConversationsResponse = zod.array(ListConversationsResponseItem)
+
+
+/**
+ * @summary Get a conversation with all its messages
+ */
+export const GetConversationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetConversationResponse = zod.object({
+  "conversation": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "citations": zod.array(zod.object({
+  "bookId": zod.number(),
+  "bookTitle": zod.string(),
+  "author": zod.string(),
+  "chapterTitle": zod.string().nullish(),
+  "pageStart": zod.number().nullish(),
+  "pageEnd": zod.number().nullish(),
+  "excerpt": zod.string(),
+  "relevanceScore": zod.number()
+})).nullable(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Delete a conversation and its messages
+ */
+export const DeleteConversationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteConversationResponse = zod.void()
+
+
+/**
+ * Paginated, filterable log of every user/assistant message across all conversations and users.
+ * @summary Full activity log of all chat transactions (admin)
+ */
+export const listAdminLogsQueryLimitDefault = 25;
+export const listAdminLogsQueryLimitMax = 100;
+
+export const listAdminLogsQueryOffsetDefault = 0;
+export const listAdminLogsQueryOffsetMin = 0;
+
+
+
+export const ListAdminLogsQueryParams = zod.object({
+  "q": zod.coerce.string().optional().describe('Free-text search over message content and conversation title'),
+  "userId": zod.coerce.string().optional().describe('Filter by Clerk user ID'),
+  "role": zod.enum(['user', 'assistant']).optional(),
+  "from": zod.coerce.string().optional().describe('ISO date-time lower bound (inclusive)'),
+  "to": zod.coerce.string().optional().describe('ISO date-time upper bound (inclusive)'),
+  "limit": zod.coerce.number().int().min(1).max(listAdminLogsQueryLimitMax).default(listAdminLogsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listAdminLogsQueryOffsetMin).default(listAdminLogsQueryOffsetDefault)
+})
+
+export const ListAdminLogsResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "conversationId": zod.number(),
+  "conversationTitle": zod.string(),
+  "userId": zod.string().describe('Clerk user ID of the conversation owner'),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "citationCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
  * @summary Get catalog-wide statistics
  */
 export const GetCatalogStatsResponse = zod.object({

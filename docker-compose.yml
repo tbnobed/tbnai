@@ -40,6 +40,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── One-shot schema migration (runs before the API) ──────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+      target: builder
+    command: ["pnpm", "--filter", "@workspace/db", "run", "push-force"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-archive}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-archive_db}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+
   # ── Express API (RAG + REST + Clerk proxy) ───────────────────────────────
   api:
     build:
@@ -49,6 +64,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -57,6 +74,9 @@ services:
       # ── Clerk Auth ──
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
       CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+      # Comma-separated emails granted admin access (logs, invites).
+      # Users with Clerk publicMetadata.role="admin" are also admins.
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
 
       # ── Local LLM (DGX Spark / OpenAI-compatible endpoint) ──
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}

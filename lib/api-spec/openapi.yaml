@@ -309,6 +309,150 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /chat:
+    post:
+      operationId: submitChatMessage
+      tags: [search]
+      summary: Send a chat message (conversational RAG)
+      description: Sends a message in a conversation; the answer uses retrieved passages plus the full conversation history. Omit conversationId to start a new conversation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: Assistant reply with citations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /chat/conversations:
+    get:
+      operationId: listConversations
+      tags: [search]
+      summary: List the current user's conversations
+      responses:
+        "200":
+          description: Conversations, most recent first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  /chat/conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [search]
+      summary: Get a conversation with all its messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteConversation
+      tags: [search]
+      summary: Delete a conversation and its messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /admin/logs:
+    get:
+      operationId: listAdminLogs
+      tags: [search]
+      summary: Full activity log of all chat transactions (admin)
+      description: Paginated, filterable log of every user/assistant message across all conversations and users.
+      parameters:
+        - name: q
+          in: query
+          description: Free-text search over message content and conversation title
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: Filter by Clerk user ID
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, assistant]
+        - name: from
+          in: query
+          description: ISO date-time lower bound (inclusive)
+          schema:
+            type: string
+        - name: to
+          in: query
+          description: ISO date-time upper bound (inclusive)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Paginated log entries, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLogsPage"
+
   /catalog/stats:
     get:
       operationId: getCatalogStats
@@ -514,6 +658,113 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SearchResult"
+        total:
+          type: number
+
+    # ── Chat ──────────────────────────────────────────────────────────────────
+
+    ChatInput:
+      type: object
+      required: [message]
+      properties:
+        conversationId:
+          type: ["number", "null"]
+          description: Existing conversation to continue; omit or null to start a new one
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+
+    ChatMessage:
+      type: object
+      required: [id, conversationId, role, content, citations, createdAt]
+      properties:
+        id:
+          type: number
+        conversationId:
+          type: number
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        citations:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/Citation"
+        createdAt:
+          type: string
+          format: date-time
+
+    ChatResponse:
+      type: object
+      required: [conversationId, userMessage, assistantMessage]
+      properties:
+        conversationId:
+          type: number
+        userMessage:
+          $ref: "#/components/schemas/ChatMessage"
+        assistantMessage:
+          $ref: "#/components/schemas/ChatMessage"
+
+    Conversation:
+      type: object
+      required: [id, title, createdAt, updatedAt]
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ConversationDetail:
+      type: object
+      required: [conversation, messages]
+      properties:
+        conversation:
+          $ref: "#/components/schemas/Conversation"
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+
+    AdminLogEntry:
+      type: object
+      required: [id, conversationId, conversationTitle, userId, role, content, citationCount, createdAt]
+      properties:
+        id:
+          type: number
+        conversationId:
+          type: number
+        conversationTitle:
+          type: string
+        userId:
+          type: string
+          description: Clerk user ID of the conversation owner
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        citationCount:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminLogsPage:
+      type: object
+      required: [entries, total]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLogEntry"
         total:
           type: number
 
