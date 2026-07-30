@@ -172,8 +172,8 @@ function ClerkProviderWithRoutes() {
           start: {
             title: "Welcome to TBNStudios.ai",
             titleCombined: "Welcome to TBNStudios.ai",
-            subtitle: "Sign in to search the ministry archive",
-            subtitleCombined: "Sign in to search the ministry archive",
+            subtitle: "Sign in to search the archive",
+            subtitleCombined: "Sign in to search the archive",
           },
         },
       }}
