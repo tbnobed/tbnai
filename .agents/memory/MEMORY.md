@@ -1,1 +1,1 @@
-- [TBNai logo handling](tbnai-logo.md) — logo PNG has baked-in haze; never run background removal on it, serve it flattened on white (page bg is pure white).
+- [TBNai logo handling](tbnai-logo.md) — use the user's uploaded logo PNG exactly as-is; every processed version (bg removal, flatten, trim) was rejected.
