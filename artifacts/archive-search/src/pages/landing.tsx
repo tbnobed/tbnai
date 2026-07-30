@@ -21,13 +21,8 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/sign-in">
-              <Button variant="ghost" size="sm" data-testid="button-signin">
+              <Button size="sm" data-testid="button-signin">
                 Sign in
-              </Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button size="sm" data-testid="button-signup">
-                Get started
               </Button>
             </Link>
           </div>
@@ -46,10 +41,10 @@ export default function Landing() {
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
           Search the full text of our published book archive with plain-English questions. Get synthesized answers with citations back to book, chapter, and page.
         </p>
-        <Link href="/sign-up">
-          <Button size="lg" className="text-base px-8" data-testid="button-hero-signup">
+        <Link href="/sign-in">
+          <Button size="lg" className="text-base px-8" data-testid="button-hero-signin">
             <Search className="w-5 h-5 mr-2" />
-            Start searching
+            Sign in to search
           </Button>
         </Link>
       </section>

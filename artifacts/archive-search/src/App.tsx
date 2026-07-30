@@ -12,7 +12,6 @@ import LibraryPage from '@/pages/library';
 import HistoryPage from '@/pages/history';
 import AdminPage from '@/pages/admin';
 import SignInPage from '@/pages/sign-in';
-import SignUpPage from '@/pages/sign-up';
 import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -138,7 +137,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomeRedirect} />
       <Route path="/sign-in/*?" component={SignInPage} />
-      <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/sign-up/*?"><Redirect to="/sign-in" /></Route>
       <Route path="/search">
         <ProtectedRoute component={SearchPage} />
       </Route>
@@ -165,18 +164,11 @@ function ClerkProviderWithRoutes() {
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
       signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
       localization={{
         signIn: {
           start: {
             title: "Welcome back",
             subtitle: "Sign in to access the archive",
-          },
-        },
-        signUp: {
-          start: {
-            title: "Join the archive",
-            subtitle: "Create an account to start searching",
           },
         },
       }}
