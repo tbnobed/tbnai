@@ -39,9 +39,7 @@ const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
   options: {
-    logoPlacement: "inside" as const,
-    logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.png`,
+    logoPlacement: "none" as const,
   },
   variables: {
     colorPrimary: "hsl(28, 68%, 48%)",
@@ -60,9 +58,7 @@ const clerkAppearance = {
     cardBox: "bg-[hsl(30,35%,98%)] rounded-2xl w-[440px] max-w-full overflow-hidden shadow-lg border border-[hsl(32,15%,90%)]",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "hidden",
-    headerSubtitle: "hidden",
-    header: "!mb-0",
+    header: "hidden",
     socialButtonsBlockButtonText: "text-[hsl(25,18%,18%)] font-medium",
     formFieldLabel: "text-[hsl(25,18%,18%)] font-medium",
     footerActionLink: "text-[hsl(28,68%,48%)] font-medium hover:text-[hsl(28,68%,42%)]",
@@ -71,8 +67,7 @@ const clerkAppearance = {
     identityPreviewEditButton: "text-[hsl(28,68%,48%)]",
     formFieldSuccessText: "text-green-700",
     alertText: "text-[hsl(25,18%,18%)]",
-    logoBox: "h-96 mb-2",
-    logoImage: "h-96 w-auto",
+
     socialButtonsBlockButton: "border-[hsl(32,15%,88%)] hover:bg-[hsl(32,18%,92%)]",
     formButtonPrimary: "bg-[hsl(28,68%,48%)] hover:bg-[hsl(28,68%,42%)] text-white font-medium",
     formFieldInput: "border-[hsl(32,15%,88%)] bg-white text-[hsl(25,18%,18%)] focus:border-[hsl(28,68%,48%)]",
@@ -81,7 +76,7 @@ const clerkAppearance = {
     alert: "border-[hsl(32,15%,88%)]",
     otpCodeFieldInput: "border-[hsl(32,15%,88%)]",
     formFieldRow: "gap-4",
-    main: "gap-6",
+    main: "gap-4",
   },
 };
 

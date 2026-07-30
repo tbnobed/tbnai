@@ -4,7 +4,12 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-4">
+      <img
+        src={`${basePath}/logo.png`}
+        alt="TBNai"
+        className="w-80 h-auto"
+      />
       <SignIn routing="path" path={`${basePath}/sign-in`} />
     </div>
   );
