@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/express": "^2.1.47",
     "@clerk/shared": "^4.25.8",
+    "@sendgrid/mail": "^8.1.6",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",

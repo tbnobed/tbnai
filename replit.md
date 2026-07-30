@@ -11,6 +11,17 @@ An internal search tool for a broadcasting ministry's book publishing archive. S
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 
+## Project rule — Docker-first, self-contained builds
+
+**Everything built for this project must run independently via `docker compose up`. Nothing may depend on Replit hosting.**
+
+- All configuration via environment variables. No hardcoded hosts, ports, secrets, or URLs.
+- No Replit-specific integrations, secrets managers, or platform APIs in application code.
+- All services containerized: database, API, web frontend, any future workers.
+- The Replit workspace is used for development only. The canonical deployment target is the self-hosted Docker Compose stack defined in `docker-compose.yml`.
+- Env vars for local dev go in a `.env` file (gitignored). See `.env.example` for all required values.
+- Before introducing any new external dependency or service, verify it can be configured entirely through env vars and works inside a Docker container with no Replit-specific scaffolding.
+
 ## Stack
 
 - pnpm workspaces, Node.js 22, TypeScript 5.9

@@ -74,6 +74,12 @@ services:
       INGEST_CHUNK_OVERLAP: ${INGEST_CHUNK_OVERLAP:-100}
       INGEST_EMBED_BATCH: ${INGEST_EMBED_BATCH:-10}
 
+      # ── SendGrid (invite emails) ──
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-Archive Search}
+      APP_BASE_URL: ${APP_BASE_URL}
+
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       # Mount your book files here. Register a book with filePath: /books/filename.pdf
