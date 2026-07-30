@@ -6,7 +6,6 @@ import { shadcn } from '@clerk/themes';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import Landing from '@/pages/landing';
 import SearchPage from '@/pages/search';
 import LibraryPage from '@/pages/library';
 import HistoryPage from '@/pages/history';
@@ -114,7 +113,7 @@ function HomeRedirect() {
         <Redirect to="/search" />
       </Show>
       <Show when="signed-out">
-        <Landing />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );
