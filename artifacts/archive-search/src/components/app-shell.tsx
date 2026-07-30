@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { BookOpen, Search, History, Library, Settings, LogOut } from "lucide-react";
+import { BookOpen, Search, History, Library, Settings, LogOut, UploadCloud } from "lucide-react";
 import { useClerk, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +20,7 @@ export function AppShell({ children }: AppShellProps) {
   const navigation = [
     { name: "Search", href: "/search", icon: Search },
     { name: "Library", href: "/library", icon: Library },
+    { name: "Upload", href: "/upload", icon: UploadCloud },
     { name: "History", href: "/history", icon: History },
     { name: "Admin", href: "/admin", icon: Settings },
   ];

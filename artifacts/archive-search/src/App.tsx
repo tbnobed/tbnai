@@ -12,6 +12,7 @@ import LibraryPage from '@/pages/library';
 import HistoryPage from '@/pages/history';
 import AdminPage from '@/pages/admin';
 import SignInPage from '@/pages/sign-in';
+import UploadPage from '@/pages/upload';
 import { Route, Switch, Redirect, Router as WouterRouter, useLocation } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -143,6 +144,9 @@ function Router() {
       </Route>
       <Route path="/library">
         <ProtectedRoute component={LibraryPage} />
+      </Route>
+      <Route path="/upload">
+        <ProtectedRoute component={UploadPage} />
       </Route>
       <Route path="/history">
         <ProtectedRoute component={HistoryPage} />
