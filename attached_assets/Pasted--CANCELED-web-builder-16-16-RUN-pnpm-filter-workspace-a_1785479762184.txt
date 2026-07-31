@@ -1,0 +1,40 @@
+ => CANCELED [web builder 16/16] RUN pnpm --filter @workspace/archive-search run build                                                 0.5s
+------
+ > [migrate builder 19/19] RUN pnpm --filter @workspace/api-server run build:
+0.370 $ node ./build.mjs
+0.413 Error: The package "@esbuild/linux-arm64" could not be found, and is needed by esbuild.
+0.413
+0.413 If you are installing esbuild with npm, make sure that you don't specify the
+0.413 "--no-optional" or "--omit=optional" flags. The "optionalDependencies" feature
+0.413 of "package.json" is used by esbuild to install the correct binary executable
+0.413 for your current platform.
+0.413     at generateBinPath (/app/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1750:15)
+0.413     at esbuildCommandAndArgs (/app/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1820:33)
+0.413     at ensureServiceIsRunning (/app/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1977:25)
+0.413     at build (/app/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1876:26)
+0.413     at buildAll (file:///app/artifacts/api-server/build.mjs:17:9)
+0.430 /app/artifacts/api-server:
+0.430 [ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @workspace/api-server@0.0.0 build: `node ./build.mjs`
+0.430 Exit status 1
+------
+[+] up 0/3
+ ⠙ Image tbnai-migrate Building                                                                                                         0.8s
+ ⠙ Image tbnai-api     Building                                                                                                         0.8s
+ ⠙ Image tbnai-web     Building                                                                                                         0.8s
+Dockerfile.api:31
+
+--------------------
+
+  29 |
+
+  30 |     # Build the API server (esbuild bundles to dist/index.mjs)
+
+  31 | >>> RUN pnpm --filter @workspace/api-server run build
+
+  32 |
+
+  33 |
+
+--------------------
+
+target migrate: failed to solve: process "/bin/sh -c pnpm --filter @workspace/api-server run build" did not complete successfully: exit code: 1
