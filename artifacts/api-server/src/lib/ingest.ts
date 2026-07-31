@@ -10,6 +10,7 @@ import path from "node:path";
 import { db, booksTable, chunksTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { embedText } from "./rag";
+import { detectBookMetadata } from "./metadata";
 import { logger } from "./logger";
 
 // Chunking parameters — tune via env vars
@@ -27,8 +28,97 @@ interface TextChunk {
   chunkIndex: number;
 }
 
-/** Extract raw text from a PDF or plain-text file. */
-async function extractText(
+/** Strip HTML tags/entities from an (X)HTML string, keeping readable text. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi, "\n\n$2\n\n")
+    .replace(/<(p|div|br|li|tr)[^>]*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Zip-bomb guards for EPUB extraction
+const EPUB_MAX_ENTRIES = 5000;
+const EPUB_MAX_ENTRY_CHARS = 20_000_000; // ~20 MB of text per entry
+const EPUB_MAX_TOTAL_CHARS = 100_000_000; // ~100 MB of text total
+
+/** Read one XML/HTML attribute value (single- or double-quoted). */
+function attr(tag: string, name: string): string | undefined {
+  const m = tag.match(new RegExp(`[\\s"']${name}\\s*=\\s*("([^"]*)"|'([^']*)')`));
+  return m?.[2] ?? m?.[3];
+}
+
+/** Extract text from an EPUB (a zip of XHTML files, read in spine order). */
+async function extractEpubText(filePath: string): Promise<string> {
+  const { default: JSZip } = await import("jszip");
+  const zip = await JSZip.loadAsync(await fs.readFile(filePath));
+
+  if (Object.keys(zip.files).length > EPUB_MAX_ENTRIES) {
+    throw new Error("EPUB rejected: too many entries in archive");
+  }
+
+  let totalChars = 0;
+  const readEntry = async (entryPath: string): Promise<string | undefined> => {
+    const text = await zip.file(entryPath)?.async("string");
+    if (text === undefined) return undefined;
+    if (text.length > EPUB_MAX_ENTRY_CHARS) {
+      throw new Error("EPUB rejected: archive entry too large");
+    }
+    totalChars += text.length;
+    if (totalChars > EPUB_MAX_TOTAL_CHARS) {
+      throw new Error("EPUB rejected: uncompressed content too large");
+    }
+    return text;
+  };
+
+  // 1. Find the OPF package file via META-INF/container.xml
+  const container = await readEntry("META-INF/container.xml");
+  const rootfileTag = container?.match(/<rootfile\s[\s\S]*?>/)?.[0];
+  const opfPathRaw = rootfileTag ? attr(rootfileTag, "full-path") : undefined;
+  if (!opfPathRaw) throw new Error("Invalid EPUB: missing container.xml/OPF");
+  const opfPath = decodeURIComponent(opfPathRaw);
+
+  const opf = await readEntry(opfPath);
+  if (!opf) throw new Error(`Invalid EPUB: OPF not found at ${opfPath}`);
+  const opfDir = path.posix.dirname(opfPath);
+
+  // 2. Map manifest ids → hrefs, then walk the spine in reading order
+  const manifest = new Map<string, string>();
+  for (const m of opf.matchAll(/<item\s[\s\S]*?>/g)) {
+    const id = attr(m[0], "id");
+    const href = attr(m[0], "href");
+    if (id && href) manifest.set(id, href);
+  }
+  const spineIds = [...opf.matchAll(/<itemref\s[\s\S]*?>/g)]
+    .map((m) => attr(m[0], "idref"))
+    .filter((id): id is string => Boolean(id));
+
+  const parts: string[] = [];
+  for (const id of spineIds) {
+    const href = manifest.get(id);
+    if (!href) continue;
+    const decoded = decodeURIComponent(href);
+    const entryPath =
+      opfDir === "." ? decoded : path.posix.join(opfDir, decoded);
+    const html = await readEntry(entryPath);
+    if (html) parts.push(htmlToText(html));
+  }
+
+  if (parts.length === 0) throw new Error("EPUB contained no readable content");
+  return parts.join("\n\n");
+}
+
+/** Extract raw text from a PDF, EPUB, DOCX, or plain-text file. */
+export async function extractText(
   filePath: string,
 ): Promise<{ text: string; pages: Map<number, number> }> {
   const ext = path.extname(filePath).toLowerCase();
@@ -52,6 +142,17 @@ async function extractText(
     }
 
     return { text: data.text as string, pages };
+  }
+
+  if (ext === ".epub") {
+    const text = await extractEpubText(filePath);
+    return { text, pages: new Map([[0, 1]]) };
+  }
+
+  if (ext === ".docx") {
+    const mammoth = await import("mammoth");
+    const result = await mammoth.extractRawText({ path: filePath });
+    return { text: result.value, pages: new Map([[0, 1]]) };
   }
 
   // Plain text / other formats — read as UTF-8
@@ -137,7 +238,10 @@ function chunkText(
  * Ingest a single book: extract text, chunk, embed, persist.
  * Call this from a background job after creating the book record.
  */
-export async function ingestBook(bookId: number): Promise<void> {
+export async function ingestBook(
+  bookId: number,
+  opts: { detectMetadata?: boolean } = {},
+): Promise<void> {
   // Mark as processing
   await db
     .update(booksTable)
@@ -156,6 +260,29 @@ export async function ingestBook(bookId: number): Promise<void> {
   try {
     // 1. Extract text
     const { text, pages } = await extractText(book.filePath);
+
+    // 1b. Auto-detect metadata (bulk uploads) — file metadata first, then LLM
+    if (opts.detectMetadata) {
+      const meta = await detectBookMetadata(book.filePath, text);
+      const updates: Partial<typeof booksTable.$inferInsert> = {};
+      if (meta.title) updates.title = meta.title;
+      if (meta.author) updates.author = meta.author;
+      if (meta.publishedYear) updates.publishedYear = meta.publishedYear;
+      if (meta.description) updates.description = meta.description;
+      // Never leave the placeholder author if detection came up empty
+      if (!meta.author && book.author === "Detecting…") {
+        updates.author = "Unknown";
+      }
+      if (Object.keys(updates).length > 0) {
+        await db
+          .update(booksTable)
+          .set(updates)
+          .where(eq(booksTable.id, bookId));
+        logger.info({ bookId, ...updates }, "Auto-detected book metadata");
+      } else {
+        logger.warn({ bookId }, "Metadata auto-detection found nothing");
+      }
+    }
 
     // 2. Chunk
     const textChunks = chunkText(text, pages);
