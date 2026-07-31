@@ -309,6 +309,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /books/{id}/content:
+    get:
+      operationId: getBookContent
+      tags: [books]
+      summary: Full extracted text of a book, in reading order (for the reader view)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: All chunks in reading order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookContent"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /chat:
     post:
       operationId: submitChatMessage
@@ -503,6 +528,9 @@ components:
         filePath:
           type: string
           description: Server-side path to the source file (PDF or plain text)
+        coverPath:
+          type: ["string", "null"]
+          description: Server-side path to the extracted cover image, if any
         status:
           type: string
           enum: [pending, processing, ready, error]
@@ -595,6 +623,28 @@ components:
             $ref: "#/components/schemas/Chunk"
         total:
           type: number
+
+    BookContentSection:
+      type: object
+      required: [chunkIndex, chapterTitle, content]
+      properties:
+        chunkIndex:
+          type: number
+        chapterTitle:
+          type: ["string", "null"]
+        content:
+          type: string
+
+    BookContent:
+      type: object
+      required: [book, sections]
+      properties:
+        book:
+          $ref: "#/components/schemas/Book"
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookContentSection"
 
     # ── Search ────────────────────────────────────────────────────────────────
 

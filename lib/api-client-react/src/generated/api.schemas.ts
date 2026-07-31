@@ -33,6 +33,11 @@ export interface Book {
   description: string | null;
   /** Server-side path to the source file (PDF or plain text) */
   filePath: string;
+  /**
+     * Server-side path to the extracted cover image, if any
+     * @nullable
+     */
+  coverPath?: string | null;
   status: BookStatus;
   /** @nullable */
   errorMessage?: string | null;
@@ -90,6 +95,18 @@ export interface Chunk {
 export interface ChunkListPage {
   chunks: Chunk[];
   total: number;
+}
+
+export interface BookContentSection {
+  chunkIndex: number;
+  /** @nullable */
+  chapterTitle: string | null;
+  content: string;
+}
+
+export interface BookContent {
+  book: Book;
+  sections: BookContentSection[];
 }
 
 export interface SearchInput {

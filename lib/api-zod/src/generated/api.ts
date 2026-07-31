@@ -155,6 +155,7 @@ export const ListBooksResponse = zod.object({
   "publishedYear": zod.number().nullable(),
   "description": zod.string().nullable(),
   "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
   "status": zod.enum(['pending', 'processing', 'ready', 'error']),
   "errorMessage": zod.string().nullish(),
   "totalChunks": zod.number(),
@@ -188,6 +189,7 @@ export const CreateBookResponse = zod.object({
   "publishedYear": zod.number().nullable(),
   "description": zod.string().nullable(),
   "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
   "status": zod.enum(['pending', 'processing', 'ready', 'error']),
   "errorMessage": zod.string().nullish(),
   "totalChunks": zod.number(),
@@ -210,6 +212,7 @@ export const GetBookResponse = zod.object({
   "publishedYear": zod.number().nullable(),
   "description": zod.string().nullable(),
   "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
   "status": zod.enum(['pending', 'processing', 'ready', 'error']),
   "errorMessage": zod.string().nullish(),
   "totalChunks": zod.number(),
@@ -243,6 +246,7 @@ export const UpdateBookResponse = zod.object({
   "publishedYear": zod.number().nullable(),
   "description": zod.string().nullable(),
   "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
   "status": zod.enum(['pending', 'processing', 'ready', 'error']),
   "errorMessage": zod.string().nullish(),
   "totalChunks": zod.number(),
@@ -275,6 +279,7 @@ export const ReindexBookResponse = zod.object({
   "publishedYear": zod.number().nullable(),
   "description": zod.string().nullable(),
   "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
   "status": zod.enum(['pending', 'processing', 'ready', 'error']),
   "errorMessage": zod.string().nullish(),
   "totalChunks": zod.number(),
@@ -302,6 +307,36 @@ export const ListBookChunksResponse = zod.object({
   "createdAt": zod.coerce.date()
 })),
   "total": zod.number()
+})
+
+
+/**
+ * @summary Full extracted text of a book, in reading order (for the reader view)
+ */
+export const GetBookContentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetBookContentResponse = zod.object({
+  "book": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "author": zod.string(),
+  "publishedYear": zod.number().nullable(),
+  "description": zod.string().nullable(),
+  "filePath": zod.string().describe('Server-side path to the source file (PDF or plain text)'),
+  "coverPath": zod.string().nullish().describe('Server-side path to the extracted cover image, if any'),
+  "status": zod.enum(['pending', 'processing', 'ready', 'error']),
+  "errorMessage": zod.string().nullish(),
+  "totalChunks": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "sections": zod.array(zod.object({
+  "chunkIndex": zod.number(),
+  "chapterTitle": zod.string().nullable(),
+  "content": zod.string()
+}))
 })
 
 

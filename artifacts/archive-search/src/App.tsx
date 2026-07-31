@@ -10,6 +10,7 @@ import AdminPage from '@/pages/admin';
 import LogsPage from '@/pages/logs';
 import SignInPage from '@/pages/sign-in';
 import UploadPage from '@/pages/upload';
+import ReaderPage from '@/pages/reader';
 import { Route, Switch, Redirect, Router as WouterRouter } from 'wouter';
 import { Loader2 } from 'lucide-react';
 
@@ -49,6 +50,9 @@ function Router() {
       </Route>
       <Route path="/library">
         <ProtectedRoute component={LibraryPage} />
+      </Route>
+      <Route path="/library/:id/read">
+        <ProtectedRoute component={ReaderPage} />
       </Route>
       <Route path="/upload">
         <ProtectedRoute component={UploadPage} />

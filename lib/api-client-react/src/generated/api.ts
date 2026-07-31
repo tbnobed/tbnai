@@ -23,6 +23,7 @@ import type {
   AdminLogsPage,
   ApiError,
   Book,
+  BookContent,
   BookInput,
   BookListPage,
   BookUpdate,
@@ -975,6 +976,83 @@ export function useListBookChunks<TData = Awaited<ReturnType<typeof listBookChun
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListBookChunksQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBookContentUrl = (id: number,) => {
+
+
+
+
+  return `/api/books/${id}/content`
+}
+
+/**
+ * @summary Full extracted text of a book, in reading order (for the reader view)
+ */
+export const getBookContent = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<BookContent> => {
+
+  return customFetch<BookContent>(getGetBookContentUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookContentQueryKey = (id: number,) => {
+    return [
+    `/api/books/${id}/content`
+    ] as const;
+    }
+
+
+export const getGetBookContentQueryOptions = <TData = Awaited<ReturnType<typeof getBookContent>>, TError = ErrorType<ApiError>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookContentQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookContent>>> = ({ signal }) => getBookContent(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBookContent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookContentQueryResult = NonNullable<Awaited<ReturnType<typeof getBookContent>>>
+export type GetBookContentQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Full extracted text of a book, in reading order (for the reader view)
+ */
+
+export function useGetBookContent<TData = Awaited<ReturnType<typeof getBookContent>>, TError = ErrorType<ApiError>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookContent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookContentQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import path from "node:path";
+import fs from "node:fs/promises";
 import { sessionAuth as getAuth } from "../lib/auth";
 import { eq, count } from "drizzle-orm";
 import { db, booksTable, chunksTable } from "@workspace/db";
@@ -160,6 +162,14 @@ router.delete("/books/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Best-effort cleanup of the extracted cover file
+  if (book.coverPath) {
+    const coversDir = path.resolve(process.env.BOOKS_DIR ?? "./books", "covers");
+    fs.unlink(path.join(coversDir, path.basename(book.coverPath))).catch(
+      () => {},
+    );
+  }
+
   res.sendStatus(204);
 });
 
@@ -245,6 +255,95 @@ router.get(
     ]);
 
     res.json({ chunks, total: totalResult[0]?.count ?? 0 });
+  },
+);
+
+/** GET /books/:id/cover — serve the extracted cover image */
+router.get(
+  "/books/:id/cover",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = GetBookParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [book] = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.id, params.data.id));
+
+    if (!book?.coverPath) {
+      res.status(404).json({ error: "No cover" });
+      return;
+    }
+
+    // Never serve the DB path directly — reconstruct it from the covers
+    // directory + basename so a bad DB value can't reach arbitrary files.
+    const coversDir = path.resolve(process.env.BOOKS_DIR ?? "./books", "covers");
+    const safePath = path.join(coversDir, path.basename(book.coverPath));
+
+    res.sendFile(safePath, (err) => {
+      if (err && !res.headersSent) res.status(404).json({ error: "No cover" });
+    });
+  },
+);
+
+/** GET /books/:id/content — full text in reading order (reader view) */
+router.get(
+  "/books/:id/content",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = GetBookParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [book] = await db
+      .select()
+      .from(booksTable)
+      .where(eq(booksTable.id, params.data.id));
+
+    if (!book) {
+      res.status(404).json({ error: "Book not found" });
+      return;
+    }
+
+    const chunks = await db
+      .select({
+        chunkIndex: chunksTable.chunkIndex,
+        chapterTitle: chunksTable.chapterTitle,
+        content: chunksTable.content,
+      })
+      .from(chunksTable)
+      .where(eq(chunksTable.bookId, params.data.id))
+      .orderBy(chunksTable.chunkIndex);
+
+    // Chunks overlap by INGEST_CHUNK_OVERLAP words for retrieval quality.
+    // Strip the overlap only when it verifiably matches the tail of the
+    // previous chunk, so a config change can't corrupt the reading text.
+    const overlap = parseInt(process.env.INGEST_CHUNK_OVERLAP ?? "100", 10);
+    const sections = chunks.map((c, i) => {
+      let content = c.content;
+      if (i > 0 && overlap > 0 && Number.isFinite(overlap)) {
+        const words = c.content.split(/\s+/);
+        const prevWords = chunks[i - 1]!.content.split(/\s+/);
+        const prefix = words.slice(0, overlap).join(" ");
+        const prevTail = prevWords.slice(-overlap).join(" ");
+        if (words.length > overlap && prefix === prevTail) {
+          content = words.slice(overlap).join(" ");
+        }
+      }
+      return {
+        chunkIndex: c.chunkIndex,
+        chapterTitle: c.chapterTitle,
+        content,
+      };
+    });
+
+    res.json({ book, sections });
   },
 );
 

@@ -11,6 +11,8 @@ export * from './adminLogEntryRole';
 export * from './adminLogsPage';
 export * from './apiError';
 export * from './book';
+export * from './bookContent';
+export * from './bookContentSection';
 export * from './bookInput';
 export * from './bookListPage';
 export * from './bookStatus';

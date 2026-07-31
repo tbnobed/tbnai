@@ -23,6 +23,7 @@ export const booksTable = pgTable("books", {
   publishedYear: integer("published_year"),
   description: text("description"),
   filePath: text("file_path").notNull(),
+  coverPath: text("cover_path"),
   status: bookStatusEnum("status").notNull().default("pending"),
   errorMessage: text("error_message"),
   totalChunks: integer("total_chunks").notNull().default(0),

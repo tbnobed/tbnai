@@ -117,6 +117,79 @@ async function extractEpubText(filePath: string): Promise<string> {
   return parts.join("\n\n");
 }
 
+const COVER_MIME: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+};
+const COVER_MAX_BYTES = 10_000_000;
+
+/**
+ * Extract the cover image from an EPUB, if present.
+ * Looks for a manifest item with properties="cover-image" (EPUB 3),
+ * then a <meta name="cover" content="…"> pointing at a manifest id (EPUB 2).
+ */
+export async function extractEpubCover(
+  filePath: string,
+): Promise<{ data: Buffer; ext: string } | null> {
+  const { default: JSZip } = await import("jszip");
+  const zip = await JSZip.loadAsync(await fs.readFile(filePath));
+  if (Object.keys(zip.files).length > EPUB_MAX_ENTRIES) return null;
+
+  const container = await zip.file("META-INF/container.xml")?.async("string");
+  const rootfileTag = container?.match(/<rootfile\s[\s\S]*?>/)?.[0];
+  const opfPathRaw = rootfileTag ? attr(rootfileTag, "full-path") : undefined;
+  if (!opfPathRaw) return null;
+  const opfPath = decodeURIComponent(opfPathRaw);
+  const opf = await zip.file(opfPath)?.async("string");
+  if (!opf) return null;
+  const opfDir = path.posix.dirname(opfPath);
+
+  const items = [...opf.matchAll(/<item\s[\s\S]*?>/g)].map((m) => m[0]);
+
+  // EPUB 3: <item properties="cover-image" …>
+  let href = items
+    .filter((t) => /cover-image/.test(attr(t, "properties") ?? ""))
+    .map((t) => attr(t, "href"))
+    .find(Boolean);
+
+  // EPUB 2: <meta name="cover" content="cover-id"/>
+  if (!href) {
+    const metaTag = items.length >= 0
+      ? [...opf.matchAll(/<meta\s[\s\S]*?>/g)]
+          .map((m) => m[0])
+          .find((t) => attr(t, "name") === "cover")
+      : undefined;
+    const coverId = metaTag ? attr(metaTag, "content") : undefined;
+    if (coverId) {
+      const item = items.find((t) => attr(t, "id") === coverId);
+      href = item ? attr(item, "href") : undefined;
+    }
+  }
+
+  // Fallback: any image whose id or href mentions "cover"
+  if (!href) {
+    const item = items.find(
+      (t) =>
+        /image\//.test(attr(t, "media-type") ?? "") &&
+        /cover/i.test(`${attr(t, "id") ?? ""} ${attr(t, "href") ?? ""}`),
+    );
+    href = item ? attr(item, "href") : undefined;
+  }
+
+  if (!href) return null;
+  const decoded = decodeURIComponent(href);
+  const entryPath = opfDir === "." ? decoded : path.posix.join(opfDir, decoded);
+  const ext = path.posix.extname(entryPath).toLowerCase();
+  if (!COVER_MIME[ext]) return null;
+
+  const data = await zip.file(entryPath)?.async("nodebuffer");
+  if (!data || data.length === 0 || data.length > COVER_MAX_BYTES) return null;
+  return { data, ext };
+}
+
 /** Extract raw text from a PDF, EPUB, DOCX, or plain-text file. */
 export async function extractText(
   filePath: string,
@@ -281,6 +354,27 @@ export async function ingestBook(
         logger.info({ bookId, ...updates }, "Auto-detected book metadata");
       } else {
         logger.warn({ bookId }, "Metadata auto-detection found nothing");
+      }
+    }
+
+    // 1c. Extract cover image (EPUB only, best-effort)
+    if (path.extname(book.filePath).toLowerCase() === ".epub") {
+      try {
+        const cover = await extractEpubCover(book.filePath);
+        if (cover) {
+          const booksDir = process.env.BOOKS_DIR ?? "./books";
+          const coversDir = path.join(booksDir, "covers");
+          await fs.mkdir(coversDir, { recursive: true });
+          const coverPath = path.join(coversDir, `book-${bookId}${cover.ext}`);
+          await fs.writeFile(coverPath, cover.data);
+          await db
+            .update(booksTable)
+            .set({ coverPath })
+            .where(eq(booksTable.id, bookId));
+          logger.info({ bookId, coverPath }, "Cover image extracted");
+        }
+      } catch (err) {
+        logger.warn({ bookId, err }, "Cover extraction failed (non-fatal)");
       }
     }
 

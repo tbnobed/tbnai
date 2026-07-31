@@ -7,6 +7,7 @@ import { useListBooks, useListBookChunks, getListBookChunksQueryKey, Book } from
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, BookOpen, Calendar, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 
 export default function LibraryPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,13 +61,36 @@ export default function LibraryPage() {
         ) : (
           <div className="space-y-3">
             {filteredBooks.map((book) => (
-              <button
+              <div
                 key={book.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedBook(book)}
-                className="w-full bg-card border border-card-border rounded-lg p-6 hover:border-primary/30 transition-colors text-left group"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedBook(book);
+                  }
+                }}
+                className="w-full bg-card border border-card-border rounded-lg p-6 hover:border-primary/30 transition-colors text-left group cursor-pointer"
                 data-testid={`book-${book.id}`}
               >
                 <div className="flex items-start justify-between gap-4 mb-3">
+                  {book.coverPath ? (
+                    <img
+                      src={`/api/books/${book.id}/cover`}
+                      alt=""
+                      className="w-14 h-20 object-cover rounded-sm border border-border flex-shrink-0"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-14 h-20 rounded-sm border border-border bg-muted flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-serif text-xl font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
                       {book.title}
@@ -89,7 +113,20 @@ export default function LibraryPage() {
                       </span>
                     </div>
                   </div>
-                  <StatusBadge status={book.status} />
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <StatusBadge status={book.status} />
+                    {book.status === "ready" && (
+                      <Link
+                        href={`/library/${book.id}/read`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                        data-testid={`link-read-${book.id}`}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Read
+                      </Link>
+                    )}
+                  </div>
                 </div>
                 {book.description && (
                   <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
@@ -99,7 +136,7 @@ export default function LibraryPage() {
                 {book.status === "error" && book.errorMessage && (
                   <p className="text-destructive text-sm mt-2">{book.errorMessage}</p>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         )}

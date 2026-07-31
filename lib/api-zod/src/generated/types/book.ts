@@ -17,6 +17,11 @@ export interface Book {
   description: string | null;
   /** Server-side path to the source file (PDF or plain text) */
   filePath: string;
+  /**
+     * Server-side path to the extracted cover image, if any
+     * @nullable
+     */
+  coverPath?: string | null;
   status: BookStatus;
   /** @nullable */
   errorMessage?: string | null;
