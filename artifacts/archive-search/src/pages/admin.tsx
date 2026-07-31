@@ -9,7 +9,9 @@ import { useGetCatalogStats, useCreateBook, useDeleteBook, useReindexBook, useLi
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, RefreshCw, BarChart3, BookOpen, Loader2, UserPlus, Send } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { Shield, ShieldOff, UserX } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +42,59 @@ function useInviteUser() {
   });
 }
 
+// ---------- user management hooks (direct fetch — no codegen needed) ----------
+type ManagedUser = {
+  id: number;
+  email: string;
+  role: "admin" | "staff";
+  createdAt: string;
+};
+
+function useListUsers() {
+  return useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE_URL}/api/admin/users`, {
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to load users");
+      return json.users as ManagedUser[];
+    },
+  });
+}
+
+function useSetUserRole() {
+  return useMutation({
+    mutationFn: async ({ id, role }: { id: number; role: "admin" | "staff" }) => {
+      const res = await fetch(`${BASE_URL}/api/admin/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to update role");
+      return json;
+    },
+  });
+}
+
+function useDeleteUser() {
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${BASE_URL}/api/admin/users/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error ?? "Failed to remove user");
+      }
+    },
+  });
+}
+
 export default function AdminPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -58,6 +113,43 @@ export default function AdminPage() {
   const inviteUser = useInviteUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const usersQuery = useListUsers();
+  const setUserRole = useSetUserRole();
+  const deleteUser = useDeleteUser();
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+
+  const handleSetRole = (id: number, role: "admin" | "staff") => {
+    setUserRole.mutate(
+      { id, role },
+      {
+        onSuccess: () => {
+          toast({
+            title: role === "admin" ? "Promoted to admin" : "Changed to staff",
+          });
+          queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+        },
+        onError: (err: Error) => {
+          toast({ variant: "destructive", title: "Update failed", description: err.message });
+        },
+      },
+    );
+  };
+
+  const handleDeleteUser = () => {
+    if (deleteUserId == null) return;
+    deleteUser.mutate(deleteUserId, {
+      onSuccess: () => {
+        toast({ title: "User removed" });
+        setDeleteUserId(null);
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      },
+      onError: (err: Error) => {
+        toast({ variant: "destructive", title: "Removal failed", description: err.message });
+        setDeleteUserId(null);
+      },
+    });
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -289,6 +381,77 @@ export default function AdminPage() {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Users list */}
+          <div className="bg-card border border-card-border rounded-lg divide-y divide-border">
+            {(usersQuery.data ?? []).map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center justify-between gap-4 px-5 py-3"
+                data-testid={`user-${u.id}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    {u.email}
+                    {u.id === currentUser?.id && (
+                      <span className="text-muted-foreground font-normal"> (you)</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Added {new Date(u.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <span
+                  className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    u.role === "admin"
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {u.role === "admin" ? "Admin" : "Staff"}
+                </span>
+                {u.id !== currentUser?.id && (
+                  <div className="flex items-center gap-2">
+                    {u.role === "staff" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSetRole(u.id, "admin")}
+                        disabled={setUserRole.isPending}
+                        data-testid={`button-promote-${u.id}`}
+                      >
+                        <Shield className="w-4 h-4 mr-1.5" />
+                        Make admin
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSetRole(u.id, "staff")}
+                        disabled={setUserRole.isPending}
+                        data-testid={`button-demote-${u.id}`}
+                      >
+                        <ShieldOff className="w-4 h-4 mr-1.5" />
+                        Make staff
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDeleteUserId(u.id)}
+                      disabled={deleteUser.isPending}
+                      data-testid={`button-remove-user-${u.id}`}
+                    >
+                      <UserX className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {usersQuery.isLoading && (
+              <div className="px-5 py-4 text-sm text-muted-foreground">Loading users…</div>
+            )}
+          </div>
         </div>
 
         {/* Book Management */}
@@ -416,6 +579,27 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+
+        {/* Remove user confirmation */}
+        <AlertDialog open={deleteUserId != null} onOpenChange={() => setDeleteUserId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove this user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They will no longer be able to sign in. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteUser}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Delete confirmation */}
         <AlertDialog open={!!deleteBookId} onOpenChange={() => setDeleteBookId(null)}>

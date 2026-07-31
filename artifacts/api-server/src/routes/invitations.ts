@@ -74,4 +74,86 @@ router.post("/admin/invite", requireAdmin, async (req, res): Promise<void> => {
   });
 });
 
+/** GET /admin/users — list all user accounts */
+router.get("/admin/users", requireAdmin, async (_req, res): Promise<void> => {
+  const users = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      role: usersTable.role,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .orderBy(usersTable.createdAt);
+  res.json({ users });
+});
+
+/** PATCH /admin/users/:id — change a user's role */
+router.patch(
+  "/admin/users/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    const role = req.body?.role;
+    if (!Number.isInteger(id) || (role !== "admin" && role !== "staff")) {
+      res.status(400).json({ error: "Invalid user id or role." });
+      return;
+    }
+
+    if (req.session.userId === id && role !== "admin") {
+      res.status(400).json({ error: "You can't demote your own account." });
+      return;
+    }
+
+    const [user] = await db
+      .update(usersTable)
+      .set({ role })
+      .where(eq(usersTable.id, id))
+      .returning({
+        id: usersTable.id,
+        email: usersTable.email,
+        role: usersTable.role,
+      });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    logger.info({ userId: id, role }, "User role changed");
+    res.json(user);
+  },
+);
+
+/** DELETE /admin/users/:id — remove a user account */
+router.delete(
+  "/admin/users/:id",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid user id." });
+      return;
+    }
+
+    if (req.session.userId === id) {
+      res.status(400).json({ error: "You can't delete your own account." });
+      return;
+    }
+
+    const [user] = await db
+      .delete(usersTable)
+      .where(eq(usersTable.id, id))
+      .returning({ id: usersTable.id, email: usersTable.email });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    logger.info({ userId: id, email: user.email }, "User account deleted");
+    res.sendStatus(204);
+  },
+);
+
 export default router;
