@@ -34,7 +34,7 @@ router.post("/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const { conversationId, message } = parsed.data;
+  const { conversationId, message, bookId } = parsed.data;
 
   // Resolve or create the conversation
   let conversation;
@@ -107,7 +107,12 @@ router.post("/chat", async (req, res): Promise<void> => {
     .join("\n");
 
   const queryEmbedding = await embedText(retrievalQuery);
-  const chunks = await retrieveRelevantChunks(queryEmbedding);
+  const chunks = await retrieveRelevantChunks(
+    queryEmbedding,
+    undefined,
+    undefined,
+    bookId,
+  );
   const { answer, citations } = await generateChatAnswer(
     history,
     message,

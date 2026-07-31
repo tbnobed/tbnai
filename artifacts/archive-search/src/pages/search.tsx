@@ -7,11 +7,19 @@ import {
   useListConversations,
   useGetConversation,
   useDeleteConversation,
+  useListBooks,
   getListConversationsQueryKey,
   getGetConversationQueryKey,
   type ChatMessage,
   type Citation,
 } from "@workspace/api-client-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Send,
@@ -27,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function SearchPage() {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<number | null>(null);
+  const [bookId, setBookId] = useState<number | null>(null);
   // Local optimistic message list for the active conversation
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(
     null,
@@ -37,6 +46,7 @@ export default function SearchPage() {
   const submitChat = useSubmitChatMessage();
   const deleteConversation = useDeleteConversation();
   const conversationsQuery = useListConversations();
+  const booksQuery = useListBooks({ status: "ready", limit: 100 });
   const conversationQuery = useGetConversation(conversationId ?? 0, {
     query: {
       enabled: conversationId != null,
@@ -61,7 +71,7 @@ export default function SearchPage() {
     setPendingUserMessage(message);
 
     submitChat.mutate(
-      { data: { conversationId, message } },
+      { data: { conversationId, message, bookId } },
       {
         onSuccess: (data) => {
           // Seed the cache with the new message pair so nothing flickers
@@ -222,6 +232,30 @@ export default function SearchPage() {
 
           {/* Composer */}
           <div className="border-t border-border bg-background">
+            <div className="max-w-3xl mx-auto px-6 pt-3 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                Search in
+              </span>
+              <Select
+                value={bookId == null ? "all" : String(bookId)}
+                onValueChange={(v) => setBookId(v === "all" ? null : Number(v))}
+              >
+                <SelectTrigger
+                  className="h-8 w-auto max-w-xs text-xs"
+                  data-testid="select-book-scope"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All books</SelectItem>
+                  {(booksQuery.data?.books ?? []).map((b) => (
+                    <SelectItem key={b.id} value={String(b.id)}>
+                      {b.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <form
               onSubmit={handleSubmit}
               className="max-w-3xl mx-auto px-6 py-4 flex items-end gap-3"

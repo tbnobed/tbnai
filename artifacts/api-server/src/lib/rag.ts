@@ -49,8 +49,11 @@ export async function retrieveRelevantChunks(
   queryEmbedding: number[],
   topK = TOP_K,
   minSimilarity = MIN_SIMILARITY,
+  bookId?: number | null,
 ): Promise<RetrievedChunk[]> {
   const vectorStr = `[${queryEmbedding.join(",")}]`;
+  const bookFilter =
+    bookId != null ? sql`AND c.book_id = ${bookId}` : sql``;
 
   // pgvector cosine distance: <=> returns 0 (identical) to 2 (opposite)
   // similarity = 1 - cosine_distance
@@ -79,6 +82,7 @@ export async function retrieveRelevantChunks(
       FROM chunks c
       JOIN books b ON b.id = c.book_id
       WHERE b.status = 'ready'
+        ${bookFilter}
         AND 1 - (c.embedding <=> ${vectorStr}::vector) >= ${minSimilarity}
       ORDER BY c.embedding <=> ${vectorStr}::vector
       LIMIT ${topK}

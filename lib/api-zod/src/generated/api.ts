@@ -315,7 +315,8 @@ export const submitChatMessageBodyMessageMax = 4000;
 
 export const SubmitChatMessageBody = zod.object({
   "conversationId": zod.number().nullish().describe('Existing conversation to continue; omit or null to start a new one'),
-  "message": zod.string().min(1).max(submitChatMessageBodyMessageMax)
+  "message": zod.string().min(1).max(submitChatMessageBodyMessageMax),
+  "bookId": zod.number().nullish().describe('Restrict retrieval to a single book; omit or null to search all books')
 })
 
 export const SubmitChatMessageResponse = zod.object({

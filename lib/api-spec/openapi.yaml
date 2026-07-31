@@ -674,6 +674,9 @@ components:
           type: string
           minLength: 1
           maxLength: 4000
+        bookId:
+          type: ["number", "null"]
+          description: Restrict retrieval to a single book; omit or null to search all books
 
     ChatMessage:
       type: object

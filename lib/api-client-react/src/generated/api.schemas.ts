@@ -140,6 +140,11 @@ export interface ChatInput {
      * @maxLength 4000
      */
   message: string;
+  /**
+     * Restrict retrieval to a single book; omit or null to search all books
+     * @nullable
+     */
+  bookId?: number | null;
 }
 
 export type ChatMessageRole = typeof ChatMessageRole[keyof typeof ChatMessageRole];
