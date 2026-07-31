@@ -102,9 +102,12 @@ services:
       APP_BASE_URL: ${APP_BASE_URL}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Uploaded books are stored on the mounted volume
+      BOOKS_DIR: /books
     volumes:
-      # Mount your book files here. Register a book with filePath: /books/filename.pdf
-      - ${BOOKS_DIR:-./books}:/books:ro
+      # Book files live here (uploads are written by the app — must be rw)
+      - ${BOOKS_DIR:-./books}:/books
     # Not exposed to the host — all traffic goes through nginx (web),
     # so session cookies can't be issued over an unproxied HTTP path.
     healthcheck:
