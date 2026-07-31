@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, History, Library, Settings, LogOut, UploadCloud, ScrollText } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useLocation as useNavigate } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -15,7 +14,6 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [location] = useLocation();
-  const [, navigate] = useNavigate();
   const { user, logout } = useAuth();
 
   const isAdmin = user?.isAdmin ?? false;
@@ -94,7 +92,10 @@ export function AppShell({ children }: AppShellProps) {
             className="w-full justify-start text-muted-foreground hover:text-foreground"
             onClick={async () => {
               await logout();
-              navigate("/sign-in");
+              // Full-page navigation — avoids the router race after auth changes
+              window.location.assign(
+                `${import.meta.env.BASE_URL.replace(/\/$/, "")}/sign-in`,
+              );
             }}
             data-testid="button-logout"
           >
