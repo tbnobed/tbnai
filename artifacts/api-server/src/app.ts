@@ -44,12 +44,27 @@ const sessionPool = new pg.Pool({
   max: 5,
 });
 
+// Create the session table ourselves — connect-pg-simple's
+// createTableIfMissing reads table.sql from its package directory, which
+// doesn't exist inside the esbuild bundle.
+sessionPool
+  .query(
+    `CREATE TABLE IF NOT EXISTS "session" (
+       "sid" varchar NOT NULL COLLATE "default",
+       "sess" json NOT NULL,
+       "expire" timestamp(6) NOT NULL,
+       CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+     );
+     CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`,
+  )
+  .catch((err) => logger.error({ err }, "Failed to ensure session table"));
+
 // Behind nginx (Docker) / the dev proxy — needed for secure cookies
 app.set("trust proxy", 1);
 
 app.use(
   session({
-    store: new PgSession({ pool: sessionPool, createTableIfMissing: true }),
+    store: new PgSession({ pool: sessionPool }),
     name: "tbnai.sid",
     secret: sessionSecret,
     resave: false,

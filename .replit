@@ -26,3 +26,4 @@ channel = "stable-25_05"
 
 [userenv.development]
 ADMIN_EMAIL = "admin@obedtv.com"
+ADMIN_PASSWORD = "TBNai-Admin-2026"

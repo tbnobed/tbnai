@@ -16,15 +16,20 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-bootstrapAdmin().catch((err) => {
-  logger.error({ err }, "Failed to bootstrap admin account");
-});
+// Ensure the admin account exists before accepting requests. A DB failure
+// here means the service can't authenticate anyone — fail fast.
+bootstrapAdmin()
+  .then(() => {
+    app.listen(port, (err) => {
+      if (err) {
+        logger.error({ err }, "Error listening on port");
+        process.exit(1);
+      }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
+      logger.info({ port }, "Server listening");
+    });
+  })
+  .catch((err) => {
+    logger.error({ err }, "Failed to bootstrap admin account — exiting");
     process.exit(1);
-  }
-
-  logger.info({ port }, "Server listening");
-});
+  });

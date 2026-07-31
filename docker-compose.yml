@@ -102,8 +102,8 @@ services:
     volumes:
       # Mount your book files here. Register a book with filePath: /books/filename.pdf
       - ${BOOKS_DIR:-./books}:/books:ro
-    ports:
-      - "3001:3001"
+    # Not exposed to the host — all traffic goes through nginx (web),
+    # so session cookies can't be issued over an unproxied HTTP path.
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:3001/api/healthz || exit 1"]
       interval: 15s
