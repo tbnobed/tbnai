@@ -11,7 +11,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { Router, type IRouter } from "express";
 import multer from "multer";
-import { getAuth } from "@clerk/express";
+import { sessionAuth as getAuth } from "../lib/auth";
 import { db, booksTable } from "@workspace/db";
 import { ingestBook } from "../lib/ingest";
 import { logger } from "../lib/logger";

@@ -1,30 +1,11 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, History, Library, Settings, LogOut, UploadCloud, ScrollText } from "lucide-react";
-import { useClerk, useUser, useAuth } from "@clerk/react";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { useLocation as useNavigate } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-
-function useIsAdmin(): boolean {
-  const { getToken, isSignedIn } = useAuth();
-  const { data } = useQuery({
-    queryKey: ["admin-me"],
-    enabled: !!isSignedIn,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const token = await getToken();
-      const res = await fetch(`${basePath}/api/admin/me`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: "include",
-      });
-      if (!res.ok) return { isAdmin: false };
-      return (await res.json()) as { isAdmin: boolean };
-    },
-  });
-  return data?.isAdmin ?? false;
-}
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -34,10 +15,10 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const [, navigate] = useNavigate();
+  const { user, logout } = useAuth();
 
-  const isAdmin = useIsAdmin();
+  const isAdmin = user?.isAdmin ?? false;
 
   const navigation = [
     { name: "Search", href: "/search", icon: Search },
@@ -52,9 +33,7 @@ export function AppShell({ children }: AppShellProps) {
       : []),
   ];
 
-  const initials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`
-    : user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "U";
+  const initials = user?.email?.[0]?.toUpperCase() || "U";
 
   return (
     <div className="flex min-h-[100dvh] bg-background">
@@ -102,16 +81,21 @@ export function AppShell({ children }: AppShellProps) {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.firstName || user?.emailAddresses?.[0]?.emailAddress}
+                {user?.email}
               </p>
-              <p className="text-xs text-muted-foreground">Researcher</p>
+              <p className="text-xs text-muted-foreground">
+                {isAdmin ? "Admin" : "Researcher"}
+              </p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             className="w-full justify-start text-muted-foreground hover:text-foreground"
-            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            onClick={async () => {
+              await logout();
+              navigate("/sign-in");
+            }}
             data-testid="button-logout"
           >
             <LogOut className="w-4 h-4 mr-2" />

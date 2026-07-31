@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useListBooks, useListBookChunks, Book } from "@workspace/api-client-react";
+import { useListBooks, useListBookChunks, getListBookChunksQueryKey, Book } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, BookOpen, Calendar, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,7 +13,10 @@ export default function LibraryPage() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const { data: booksData, isLoading } = useListBooks();
   const { data: chunksData } = useListBookChunks(selectedBook?.id || 0, {
-    query: { enabled: !!selectedBook },
+    query: {
+      enabled: !!selectedBook,
+      queryKey: getListBookChunksQueryKey(selectedBook?.id || 0),
+    },
   });
 
   const books = booksData?.books || [];

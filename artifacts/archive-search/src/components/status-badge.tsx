@@ -8,7 +8,15 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = {
+  const config: Record<
+    BookStatus,
+    {
+      label: string;
+      icon: typeof Clock;
+      className: string;
+      animate?: boolean;
+    }
+  > = {
     pending: {
       label: "Pending",
       icon: Clock,

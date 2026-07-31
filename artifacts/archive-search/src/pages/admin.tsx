@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, RefreshCw, BarChart3, BookOpen, Loader2, UserPlus, Send } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@clerk/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,22 +25,17 @@ const BASE_URL = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // ---------- invite hook (direct fetch — no codegen needed) ----------
 function useInviteUser() {
-  const { getToken } = useAuth();
   return useMutation({
     mutationFn: async (email: string) => {
-      const token = await getToken();
       const res = await fetch(`${BASE_URL}/api/admin/invite`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to send invite");
-      return json as { message: string };
+      return json as { message: string; tempPassword?: string };
     },
   });
 }
@@ -51,6 +45,10 @@ export default function AdminPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [deleteBookId, setDeleteBookId] = useState<number | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [invitedCredentials, setInvitedCredentials] = useState<{
+    email: string;
+    tempPassword: string;
+  } | null>(null);
 
   const { data: stats } = useGetCatalogStats();
   const { data: booksData } = useListBooks();
@@ -130,11 +128,16 @@ export default function AdminPage() {
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    inviteUser.mutate(inviteEmail.trim(), {
+    const email = inviteEmail.trim();
+    inviteUser.mutate(email, {
       onSuccess: (data) => {
-        toast({ title: "Invite sent", description: data.message });
         setInviteEmail("");
-        setIsInviteDialogOpen(false);
+        if (data.tempPassword) {
+          setInvitedCredentials({ email, tempPassword: data.tempPassword });
+        } else {
+          toast({ title: "Invite sent", description: data.message });
+          setIsInviteDialogOpen(false);
+        }
       },
       onError: (err: Error) => {
         toast({ variant: "destructive", title: "Invite failed", description: err.message });
@@ -206,9 +209,43 @@ export default function AdminPage() {
                 <DialogHeader>
                   <DialogTitle className="font-serif text-2xl">Invite a Staff Member</DialogTitle>
                 </DialogHeader>
+                {invitedCredentials ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Account created. Share these sign-in details with them:
+                    </p>
+                    <div className="rounded-md border border-border bg-muted/50 p-4 text-sm space-y-1">
+                      <p>
+                        Email:{" "}
+                        <span className="font-medium">{invitedCredentials.email}</span>
+                      </p>
+                      <p>
+                        Temporary password:{" "}
+                        <span className="font-mono font-medium" data-testid="text-temp-password">
+                          {invitedCredentials.tempPassword}
+                        </span>
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This password is shown only once.
+                    </p>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        setInvitedCredentials(null);
+                        setIsInviteDialogOpen(false);
+                      }}
+                      data-testid="button-invite-done"
+                    >
+                      Done
+                    </Button>
+                  </div>
+                ) : (
+                <>
                 <p className="text-sm text-muted-foreground">
-                  Enter their email address. They'll receive an email with a one-time sign-in link (valid for 24 hours).
-                  The link takes them directly into TBNai — no password setup required.
+                  Enter their email address. An account is created with a temporary
+                  password you can share — and if email is configured, they'll be
+                  sent their sign-in details automatically.
                 </p>
                 <form onSubmit={handleInvite} className="space-y-4 mt-2">
                   <div>
@@ -247,6 +284,8 @@ export default function AdminPage() {
                     </Button>
                   </div>
                 </form>
+                </>
+                )}
               </DialogContent>
             </Dialog>
           </div>

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@clerk/react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import {
@@ -29,13 +28,10 @@ interface UploadedBook {
 }
 
 function useUploadBook() {
-  const { getToken } = useAuth();
   return useMutation({
     mutationFn: async (formData: FormData): Promise<UploadedBook> => {
-      const token = await getToken();
       const res = await fetch(`${BASE_URL}/api/books/upload`, {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
         body: formData,
       });

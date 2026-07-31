@@ -37,9 +37,9 @@ function getAppBaseUrl(): string {
 export async function sendInviteEmail(params: {
   toEmail: string;
   invitedBy: string;
-  signInToken: string;
+  tempPassword: string;
 }): Promise<void> {
-  const { toEmail, invitedBy, signInToken } = params;
+  const { toEmail, invitedBy, tempPassword } = params;
   const sg = getSgClient();
   const baseUrl = getAppBaseUrl();
 
@@ -52,7 +52,7 @@ export async function sendInviteEmail(params: {
   const fromName =
     process.env.SENDGRID_FROM_NAME ?? "Archive Search";
 
-  const signInUrl = `${baseUrl}/sign-in?__clerk_ticket=${signInToken}`;
+  const signInUrl = `${baseUrl}/sign-in`;
 
   const html = `
 <!DOCTYPE html>
@@ -90,9 +90,14 @@ export async function sendInviteEmail(params: {
               <p style="margin:0 0 12px;font-size:16px;color:#6b5744;line-height:1.6;">
                 ${invitedBy} has invited you to access the TBNai book archive search tool.
               </p>
-              <p style="margin:0 0 32px;font-size:16px;color:#6b5744;line-height:1.6;">
+              <p style="margin:0 0 24px;font-size:16px;color:#6b5744;line-height:1.6;">
                 Ask plain-English questions and get synthesized answers drawn from the full text of
                 the published book catalog — with citations back to book, chapter, and page.
+              </p>
+              <p style="margin:0 0 8px;font-size:14px;color:#6b5744;">Sign in with:</p>
+              <p style="margin:0 0 32px;font-size:15px;color:#2d1f14;line-height:1.8;">
+                Email: <strong>${toEmail}</strong><br>
+                Temporary password: <strong style="font-family:monospace;">${tempPassword}</strong>
               </p>
 
               <!-- CTA -->
@@ -109,7 +114,7 @@ export async function sendInviteEmail(params: {
               </table>
 
               <p style="margin:28px 0 0;font-size:13px;color:#9b836e;">
-                This link expires in 24 hours. If you weren't expecting this invitation, you can ignore this email.
+                If you weren't expecting this invitation, you can ignore this email.
               </p>
             </td>
           </tr>
@@ -139,9 +144,9 @@ ${invitedBy} has invited you to access the TBNai book archive search tool.
 
 Ask plain-English questions and get synthesized answers drawn from the full text of the published book catalog — with citations back to book, chapter, and page.
 
-Access the archive: ${signInUrl}
-
-This link expires in 24 hours.
+Sign in at: ${signInUrl}
+Email: ${toEmail}
+Temporary password: ${tempPassword}
   `.trim();
 
   await sg.send({

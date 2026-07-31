@@ -71,12 +71,10 @@ services:
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-archive}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-archive_db}
 
-      # ── Clerk Auth ──
-      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
-      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
-      # Comma-separated emails granted admin access (logs, invites).
-      # Users with Clerk publicMetadata.role="admin" are also admins.
-      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # ── Self-hosted auth ──
+      SESSION_SECRET: ${SESSION_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
 
       # ── Local LLM (DGX Spark / OpenAI-compatible endpoint) ──
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
@@ -117,9 +115,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.web
-      args:
-        VITE_CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
-        VITE_CLERK_PROXY_URL: ""
     restart: unless-stopped
     depends_on:
       api:

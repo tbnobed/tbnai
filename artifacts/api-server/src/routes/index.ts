@@ -7,6 +7,7 @@ import catalogRouter from "./catalog";
 import invitationsRouter from "./invitations";
 import uploadRouter from "./upload";
 import adminLogsRouter from "./admin-logs";
+import authRouter from "./auth";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use(catalogRouter);
 router.use(invitationsRouter);
 router.use(uploadRouter);
 router.use(adminLogsRouter);
+router.use(authRouter);
 
 export default router;

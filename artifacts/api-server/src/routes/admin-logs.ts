@@ -3,11 +3,10 @@
  * across every user and conversation, with filtering and free-text search.
  */
 import { Router, type IRouter } from "express";
-import { getAuth } from "@clerk/express";
+import { sessionAuth as getAuth, requireAdmin } from "../lib/auth";
 import { desc, eq, and, gte, lte, or, ilike, count, type SQL } from "drizzle-orm";
 import { db, conversationsTable, messagesTable } from "@workspace/db";
 import { ListAdminLogsQueryParams } from "@workspace/api-zod";
-import { isAdminUser } from "../lib/admin";
 
 const router: IRouter = Router();
 
@@ -18,20 +17,10 @@ router.get("/admin/me", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  res.json({ isAdmin: await isAdminUser(auth.userId) });
+  res.json({ isAdmin: req.session?.role === "admin" });
 });
 
-router.get("/admin/logs", async (req, res): Promise<void> => {
-  const auth = getAuth(req);
-  if (!auth?.userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (!(await isAdminUser(auth.userId))) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
+router.get("/admin/logs", requireAdmin, async (req, res): Promise<void> => {
   const parsed = ListAdminLogsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

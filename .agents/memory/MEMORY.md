@@ -1,1 +1,2 @@
 - [TBNai logo handling](tbnai-logo.md) — use the user's uploaded logo PNG exactly as-is; every processed version (bg removal, flatten, trim) was rejected.
+- [Self-hosted auth only](self-hosted-auth.md) — user rejected Clerk/hosted auth; email/password + Postgres sessions, admin creds from .env. Never reintroduce third-party auth.
