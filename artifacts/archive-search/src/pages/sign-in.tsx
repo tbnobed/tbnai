@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,14 @@ import { Loader2 } from "lucide-react";
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function SignInPage() {
-  const { login } = useAuth();
-  const [, setLocation] = useLocation();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Already signed in — go to the app.
+  if (user) return <Redirect to="/search" />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +24,9 @@ export default function SignInPage() {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      setLocation("/search");
+      // Full-page navigation: immune to the render race where the router
+      // bounces back to /sign-in before the auth context has updated.
+      window.location.assign(`${basePath}/search`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {

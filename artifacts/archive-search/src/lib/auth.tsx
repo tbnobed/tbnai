@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const json = await res.json().catch(() => ({}));
         throw new Error(json.error ?? "Sign-in failed");
       }
-      // New user context — drop all cached data
-      queryClient.clear();
       const user = (await res.json()) as AuthUser;
+      // New user context — drop all cached data, then seed the auth query
+      queryClient.clear();
       queryClient.setQueryData(["auth-me"], user);
     },
     [queryClient],
