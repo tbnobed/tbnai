@@ -44,11 +44,13 @@ const sessionPool = new pg.Pool({
   max: 5,
 });
 
-// Create the session table ourselves — connect-pg-simple's
+// Create the session table if missing — connect-pg-simple's own
 // createTableIfMissing reads table.sql from its package directory, which
-// doesn't exist inside the esbuild bundle.
-sessionPool
-  .query(
+// doesn't exist inside the esbuild bundle. The table is also part of the
+// Drizzle schema (created by the migrate step); this is a safety net.
+// Awaited in index.ts before the server starts listening.
+export async function ensureSessionTable(): Promise<void> {
+  await sessionPool.query(
     `CREATE TABLE IF NOT EXISTS "session" (
        "sid" varchar NOT NULL COLLATE "default",
        "sess" json NOT NULL,
@@ -56,8 +58,8 @@ sessionPool
        CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
      );
      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");`,
-  )
-  .catch((err) => logger.error({ err }, "Failed to ensure session table"));
+  );
+}
 
 // Behind nginx (Docker) / the dev proxy — needed for secure cookies
 app.set("trust proxy", 1);

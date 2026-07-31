@@ -1,4 +1,4 @@
-import app from "./app";
+import app, { ensureSessionTable } from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapAdmin } from "./lib/auth";
 
@@ -16,9 +16,10 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// Ensure the admin account exists before accepting requests. A DB failure
-// here means the service can't authenticate anyone — fail fast.
-bootstrapAdmin()
+// Ensure the session table and admin account exist before accepting
+// requests. A DB failure here means nobody can log in — fail fast.
+ensureSessionTable()
+  .then(() => bootstrapAdmin())
   .then(() => {
     app.listen(port, (err) => {
       if (err) {
