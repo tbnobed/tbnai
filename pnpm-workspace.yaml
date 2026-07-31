@@ -158,3 +158,14 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+
+# Record platform binaries for both Intel and ARM Linux in the lockfile so
+# Docker builds work on x64 servers and ARM machines (DGX Spark, Apple Silicon).
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+    - arm64
