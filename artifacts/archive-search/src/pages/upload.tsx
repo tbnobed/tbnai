@@ -29,6 +29,26 @@ interface UploadedBook {
   status: string;
 }
 
+/** Parse a JSON API response; turn non-JSON errors (e.g. proxy error pages) into readable messages. */
+async function parseJsonResponse(res: Response): Promise<any> {
+  const text = await res.text();
+  let json: any = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Non-JSON body — a proxy/server error page
+  }
+  if (!res.ok) {
+    if (json?.error) throw new Error(json.error);
+    if (res.status === 413) {
+      throw new Error("Upload too large — the server rejected the request.");
+    }
+    throw new Error(`Upload failed (server responded with ${res.status}).`);
+  }
+  if (json === null) throw new Error("Unexpected response from server.");
+  return json;
+}
+
 function useUploadBook() {
   return useMutation({
     mutationFn: async (formData: FormData): Promise<UploadedBook> => {
@@ -37,8 +57,7 @@ function useUploadBook() {
         credentials: "include",
         body: formData,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Upload failed.");
+      const json = await parseJsonResponse(res);
       return json as UploadedBook;
     },
   });
@@ -54,8 +73,7 @@ function useUploadBulk() {
         credentials: "include",
         body: fd,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Upload failed.");
+      const json = await parseJsonResponse(res);
       return json.books as UploadedBook[];
     },
   });
